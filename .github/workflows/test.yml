@@ -58,4 +58,7 @@ jobs:
         run: uv run ruff check .
 
       - name: Run mypy
-        run: uv run mypy target_adbc
+        run: uv run mypy target_adbc tests
+
+      - name: Run ty
+        run: uv run ty check target_adbc tests
