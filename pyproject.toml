@@ -5,21 +5,22 @@ description = "Singer target for loading data into ADBC-compatible databases"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "singer-sdk>=0.52.5",
-    "adbc-driver-manager>=1.0.0",
+    "singer-sdk~=0.52.5",
+    "adbc-driver-manager>=1.9.0",
     "pyarrow>=22.0.0",
-    "duckdb>=1.4.1",
 ]
+optional-dependencies.duckdb = ["duckdb>=1.4.1"]
 
 [project.scripts]
 target-adbc = "target_adbc.target:TargetADBC.cli"
 
 [dependency-groups]
 dev = [
-    "mypy>=1.0.0",
+    "mypy>=1.18.0",
     "pyarrow-stubs>=20.0.0.20251107",
-    "pytest>=7.0.0",
-    "ruff>=0.1.0",
+    "pytest>=9.0.0",
+    "ruff>=0.14.0",
+    "target-adbc[duckdb]",
     "ty>=0.0.1a25",
 ]
 

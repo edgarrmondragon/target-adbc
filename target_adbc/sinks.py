@@ -72,7 +72,7 @@ class ADBCSink(BatchSink):
             return self.stream_name.split(".")[0]
         return self.config.get("default_target_schema")
 
-    def _python_type_to_arrow(self, python_type: dict[str, Any]) -> pa.DataType:
+    def _json_type_to_arrow(self, python_type: dict[str, Any]) -> pa.DataType:
         """Convert JSON Schema type to PyArrow data type."""
         type_mapping: dict[str, pa.DataType] = {
             "string": pa.string(),
@@ -109,7 +109,7 @@ class ADBCSink(BatchSink):
         # Handle array type
         if json_type_str == "array":
             items_type = python_type.get("items", {})
-            item_arrow_type = self._python_type_to_arrow(items_type)
+            item_arrow_type = self._json_type_to_arrow(items_type)
             return pa.list_(item_arrow_type)
 
         return type_mapping.get(json_type_str, pa.string())
@@ -123,7 +123,7 @@ class ADBCSink(BatchSink):
 
         for key in singer_schema.get("properties", {}):
             prop = singer_schema["properties"][key]
-            arrow_type = self._python_type_to_arrow(prop)
+            arrow_type = self._json_type_to_arrow(prop)
             fields.append(pa.field(key, arrow_type))
 
         # Add metadata columns if configured
