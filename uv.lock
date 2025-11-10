@@ -1014,6 +1014,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "adbc-driver-manager" },
+    { name = "duckdb" },
     { name = "pyarrow" },
     { name = "singer-sdk" },
 ]
@@ -1036,6 +1037,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "adbc-driver-manager", specifier = ">=1.9.0" },
+    { name = "duckdb", specifier = ">=1.4.1" },
     { name = "duckdb", marker = "extra == 'duckdb'", specifier = ">=1.4.1" },
     { name = "pyarrow", specifier = ">=22.0.0" },
     { name = "singer-sdk", specifier = "~=0.52.5" },

@@ -24,6 +24,9 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Install drivers
+        run: uvx dbc sync
+
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
 

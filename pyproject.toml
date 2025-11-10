@@ -8,6 +8,7 @@ dependencies = [
     "singer-sdk~=0.52.5",
     "adbc-driver-manager>=1.9.0",
     "pyarrow>=22.0.0",
+    "duckdb>=1.4.1",
 ]
 optional-dependencies.duckdb = ["duckdb>=1.4.1"]
 
