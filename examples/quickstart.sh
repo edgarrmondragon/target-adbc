@@ -24,8 +24,8 @@ CONFIG_FILE="examples/test_config.json"
 echo "📝 Creating config file: $CONFIG_FILE"
 cat > "$CONFIG_FILE" << EOF
 {
-  "driver": "adbc_driver_duckdb",
-  "uri": "duckdb:///examples/test_database.duckdb",
+  "driver": "duckdb",
+  "uri": "examples/test_database.duckdb",
   "batch_size": 1000,
   "add_record_metadata": false
 }
@@ -48,24 +48,19 @@ echo ""
 DB_PATH="examples/test_database.duckdb"
 echo "📊 Querying results..."
 python3 << EOF
-import adbc_driver_duckdb.dbapi as duckdb
+from adbc_driver_manager import dbapi
 
-conn = duckdb.connect("$DB_PATH")
-cursor = conn.cursor()
+with dbapi.connect(driver="duckdb", db_kwargs={"path": "$DB_PATH"}) as conn, conn.cursor() as cursor:
+    print("\n=== Users Table ===")
+    cursor.execute("SELECT * FROM users ORDER BY id")
+    rows = cursor.fetchall()
 
-print("\n=== Users Table ===")
-cursor.execute("SELECT * FROM users ORDER BY id")
-rows = cursor.fetchall()
+    for row in rows:
+        print(f"ID: {row[0]}, Name: {row[1]}, Email: {row[2]}")
 
-for row in rows:
-    print(f"ID: {row[0]}, Name: {row[1]}, Email: {row[2]}")
-
-cursor.execute("SELECT COUNT(*) FROM users")
-count = cursor.fetchone()[0]
-print(f"\nTotal records: {count}")
-
-cursor.close()
-conn.close()
+    cursor.execute("SELECT COUNT(*) FROM users")
+    count = cursor.fetchone()[0]
+    print(f"\nTotal records: {count}")
 EOF
 
 echo ""

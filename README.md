@@ -56,8 +56,8 @@ Create a `config.json` file with your database connection details:
 
 ```json
 {
-  "driver": "adbc_driver_duckdb",
-  "uri": "duckdb:///my_database.duckdb",
+  "driver": "duckdb",
+  "uri": "my_database.duckdb",
   "batch_size": 10000,
   "overwrite_behavior": "append"
 }
@@ -67,8 +67,8 @@ Create a `config.json` file with your database connection details:
 
 ```json
 {
-  "driver": "adbc_driver_sqlite",
-  "uri": "sqlite:///my_database.sqlite",
+  "driver": "sqlite",
+  "uri": "my_database.sqlite",
   "batch_size": 5000
 }
 ```
@@ -77,7 +77,7 @@ Create a `config.json` file with your database connection details:
 
 ```json
 {
-  "driver": "adbc_driver_postgresql",
+  "driver": "postgresql",
   "connection_kwargs": {
     "username": "myuser",
     "password": "mypass",
@@ -94,7 +94,7 @@ Create a `config.json` file with your database connection details:
 
 | Setting | Required | Default | Description |
 |---------|----------|---------|-------------|
-| `driver` | Yes | - | ADBC driver name (e.g., `adbc_driver_duckdb`) |
+| `driver` | Yes | - | ADBC driver name (e.g., `duckdb`, `sqlite`, `postgresql`) |
 | `uri` | No | - | Database URI for connection |
 | `connection_kwargs` | No | `{}` | Driver-specific connection parameters |
 | `default_target_schema` | No | - | Default schema for tables |
@@ -146,8 +146,8 @@ plugins:
       kind: integer
       value: 10000
     config:
-      driver: adbc_driver_duckdb
-      uri: duckdb:///${MELTANO_PROJECT_ROOT}/output/warehouse.duckdb
+      driver: duckdb
+      uri: ${MELTANO_PROJECT_ROOT}/output/warehouse.duckdb
 ```
 
 Then run:
@@ -171,8 +171,8 @@ EOF
 # Create config
 cat << 'EOF' > config.json
 {
-  "driver": "adbc_driver_duckdb",
-  "uri": "duckdb:///users.duckdb"
+  "driver": "duckdb",
+  "uri": "users.duckdb"
 }
 EOF
 
@@ -189,7 +189,7 @@ duckdb users.duckdb -c "SELECT * FROM users"
 # Configure PostgreSQL target
 cat << 'EOF' > pg_config.json
 {
-  "driver": "adbc_driver_postgresql",
+  "driver": "postgresql",
   "connection_kwargs": {
     "username": "postgres",
     "password": "secret",

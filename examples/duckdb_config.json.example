@@ -1,6 +1,6 @@
 {
-  "driver": "adbc_driver_duckdb",
-  "uri": "duckdb://./my_database.duckdb",
+  "driver": "duckdb",
+  "uri": "./my_database.duckdb",
   "batch_size": 10000,
   "overwrite_behavior": "append",
   "add_record_metadata": true
