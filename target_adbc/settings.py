@@ -19,9 +19,9 @@ class TargetADBCSettings(th.PropertiesList):
         "uri",
         th.StringType,
         description=(
-            "Database URI for connection. Format depends on the driver. "
-            "Examples: 'duckdb:///my_db.duckdb', 'sqlite:///my_db.sqlite', "
-            "'postgresql://localhost:5432/mydb'"
+            "Database path or connection string. Format depends on the driver. "
+            "For DuckDB/SQLite, use a file path (e.g., 'my_db.duckdb'). "
+            "For PostgreSQL, use a connection string or set connection_kwargs."
         ),
     )
 

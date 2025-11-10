@@ -19,13 +19,13 @@ A Singer target for loading data into ADBC-compatible databases.
 git clone https://github.com/yourusername/target-adbc.git
 cd target-adbc
 
-# Basic installation
+# Install target-adbc
 uv tool install --editable ./target-adbc
 
-# With specific database drivers
-uv tool install --editable "target-adbc[duckdb] @ ./target-adbc"
-uv tool install --editable "target-adbc[sqlite] @ ./target-adbc"
-uv tool install --editable "target-adbc[postgresql] @ ./target-adbc"
+# Install ADBC drivers (see "Supported Databases" section below)
+# We recommend using dbc for driver management:
+curl -LsSf https://dbc.columnar.tech/install.sh | sh
+dbc install duckdb  # or sqlite, postgresql, etc.
 
 # For development
 uv sync --all-extras
@@ -35,10 +35,29 @@ uv sync --all-extras
 
 Any database with an ADBC driver is supported. Popular options include:
 
-- **DuckDB** (`adbc-driver-duckdb`)
-- **SQLite** (`adbc-driver-sqlite`)
-- **PostgreSQL** (`adbc-driver-postgresql`)
-- **Flight SQL** (`adbc-driver-flightsql`)
+| Database | Driver Name in Config | Install with `dbc` (Recommended) | Install with `pip` |
+|----------|----------------------|----------------------------------|-------------------|
+| **DuckDB** | `duckdb` | `dbc install duckdb` | *(Use `dbc` or build from source)* |
+| **SQLite** | `sqlite` | `dbc install sqlite` | `pip install adbc-driver-sqlite` |
+| **PostgreSQL** | `postgresql` | `dbc install postgresql` | `pip install adbc-driver-postgresql` |
+| **Flight SQL** | `flightsql` | `dbc install flightsql` | `pip install adbc-driver-flightsql` |
+| **Snowflake** | `snowflake` | `dbc install snowflake` | `pip install adbc-driver-snowflake` |
+
+### Installing ADBC Drivers
+
+We recommend using [`dbc`](https://docs.columnar.tech/dbc/) to install ADBC drivers, as it provides pre-built binaries and simplifies driver management across platforms:
+
+```bash
+# Install dbc (one-time setup)
+curl -LsSf https://dbc.columnar.tech/install.sh | sh
+
+# Install the drivers you need
+dbc install duckdb
+dbc install postgresql
+dbc install sqlite
+```
+
+**Note:** Some drivers (like DuckDB) are not available as standalone PyPI packages and require `dbc` or building from source. Other drivers (SQLite, PostgreSQL, Flight SQL, Snowflake) can be installed via pip if preferred.
 
 See the [ADBC documentation](https://arrow.apache.org/adbc/current/driver/installation.html) for a full list of available drivers.
 
@@ -99,8 +118,8 @@ Create a `config.json` file with your database connection details:
 | Setting | Required | Default | Description |
 |---------|----------|---------|-------------|
 | `driver` | Yes | - | ADBC driver name (e.g., `duckdb`, `sqlite`, `postgresql`) |
-| `uri` | No | - | Database URI for connection |
-| `connection_kwargs` | No | `{}` | Driver-specific connection parameters |
+| `uri` | No | - | Database path or connection string. For DuckDB/SQLite, use a file path (e.g., `my_db.duckdb`). For PostgreSQL, use a connection string or set `connection_kwargs`. |
+| `connection_kwargs` | No | `{}` | Driver-specific connection parameters (username, password, host, port, etc.) |
 | `default_target_schema` | No | - | Default schema for tables |
 | `table_prefix` | No | `""` | Prefix to add to all table names |
 | `table_suffix` | No | `""` | Suffix to add to all table names |
@@ -127,6 +146,20 @@ When `add_record_metadata` is enabled (default), the following columns are added
 
 ## Using with Meltano
 
+### Install ADBC Drivers First
+
+Before using target-adbc with Meltano, install the required ADBC driver(s):
+
+```bash
+# Install dbc
+curl -LsSf https://dbc.columnar.tech/install.sh | sh
+
+# Install the driver(s) you need
+dbc install duckdb
+```
+
+### Add to meltano.yml
+
 Add the target to your `meltano.yml`:
 
 ```yaml
@@ -139,22 +172,30 @@ plugins:
     settings:
     - name: driver
       kind: string
-      description: ADBC driver name
+      description: ADBC driver name (e.g., duckdb, sqlite, postgresql)
     - name: uri
       kind: string
-      description: Database URI
+      description: Database path or connection string
     - name: connection_kwargs
       kind: object
       description: Additional connection parameters
     - name: batch_size
       kind: integer
       value: 10000
+    - name: overwrite_behavior
+      kind: string
+      value: append
+    - name: add_record_metadata
+      kind: boolean
+      value: true
     config:
       driver: duckdb
       uri: ${MELTANO_PROJECT_ROOT}/output/warehouse.duckdb
+      batch_size: 10000
+      overwrite_behavior: append
 ```
 
-Then run:
+### Run with Meltano
 
 ```bash
 meltano run tap-something target-adbc
@@ -220,23 +261,26 @@ git clone https://github.com/yourusername/target-adbc
 cd target-adbc
 
 # Install in development mode
-pip install -e ".[dev,duckdb]"
+uv sync --all-extras
+
+# Install ADBC drivers for testing
+dbc install duckdb sqlite
 ```
 
 ### Testing
 
 ```bash
 # Run tests
-pytest
+uv run pytest
 
 # Run with coverage
-pytest --cov=target_adbc
+uv run pytest --cov=target_adbc
 
 # Type checking
-mypy target_adbc
+uv run mypy target_adbc
 
 # Linting
-ruff check target_adbc
+uv run ruff check target_adbc
 ```
 
 ## Architecture
