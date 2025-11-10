@@ -15,16 +15,20 @@ A Singer target for loading data into ADBC-compatible databases.
 ## Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/target-adbc.git
+cd target-adbc
+
 # Basic installation
-pip install target-adbc
+uv tool install --editable ./target-adbc
 
 # With specific database drivers
-pip install target-adbc[duckdb]
-pip install target-adbc[sqlite]
-pip install target-adbc[postgresql]
+uv tool install --editable "target-adbc[duckdb] @ ./target-adbc"
+uv tool install --editable "target-adbc[sqlite] @ ./target-adbc"
+uv tool install --editable "target-adbc[postgresql] @ ./target-adbc"
 
 # For development
-pip install target-adbc[dev]
+uv sync --all-extras
 ```
 
 ## Supported Databases
@@ -130,7 +134,7 @@ plugins:
   loaders:
   - name: target-adbc
     namespace: target_adbc
-    pip_url: target-adbc
+    pip_url: -e /path/to/target-adbc
     executable: target-adbc
     settings:
     - name: driver
