@@ -11,15 +11,17 @@ dependencies = [
     "duckdb>=1.4.1",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "mypy>=1.0.0",
-    "ruff>=0.1.0",
-]
-
 [project.scripts]
 target-adbc = "target_adbc.target:TargetADBC.cli"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.0.0",
+    "pyarrow-stubs>=20.0.0.20251107",
+    "pytest>=7.0.0",
+    "ruff>=0.1.0",
+    "ty>=0.0.1a25",
+]
 
 [build-system]
 requires = ["hatchling"]

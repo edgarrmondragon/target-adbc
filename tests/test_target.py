@@ -15,7 +15,7 @@ def duckdb_config(tmp_path: Path) -> dict:
     """Create a DuckDB configuration for testing."""
     db_path = tmp_path / "test.duckdb"
     return {
-        "driver": "adbc_driver_duckdb",
+        "driver": "duckdb",
         "uri": str(db_path),  # Just use the path, not duckdb:/// URI
         "batch_size": 100,
         "add_record_metadata": False,
@@ -26,7 +26,7 @@ def test_target_initialization(duckdb_config: dict):
     """Test that the target can be initialized."""
     target = TargetADBC(config=duckdb_config)
     assert target.name == "target-adbc"
-    assert target.config["driver"] == "adbc_driver_duckdb"
+    assert target.config["driver"] == "duckdb"
 
 
 def test_sink_class_configured(duckdb_config: dict):
@@ -37,7 +37,7 @@ def test_sink_class_configured(duckdb_config: dict):
 
 def test_parallelism_disabled():
     """Test that parallel processing is disabled by default."""
-    target = TargetADBC(config={"driver": "adbc_driver_duckdb"})
+    target = TargetADBC(config={"driver": "duckdb"})
     assert target.max_parallelism == 1
 
 
@@ -45,40 +45,46 @@ def test_parallelism_disabled():
 def singer_messages() -> list[str]:
     """Create sample Singer messages."""
     return [
-        json.dumps({
-            "type": "SCHEMA",
-            "stream": "users",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "id": {"type": "integer"},
-                    "name": {"type": "string"},
-                    "email": {"type": "string"},
-                    "active": {"type": "boolean"},
+        json.dumps(
+            {
+                "type": "SCHEMA",
+                "stream": "users",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"},
+                        "email": {"type": "string"},
+                        "active": {"type": "boolean"},
+                    },
                 },
-            },
-            "key_properties": ["id"],
-        }),
-        json.dumps({
-            "type": "RECORD",
-            "stream": "users",
-            "record": {
-                "id": 1,
-                "name": "Alice",
-                "email": "alice@example.com",
-                "active": True,
-            },
-        }),
-        json.dumps({
-            "type": "RECORD",
-            "stream": "users",
-            "record": {
-                "id": 2,
-                "name": "Bob",
-                "email": "bob@example.com",
-                "active": False,
-            },
-        }),
+                "key_properties": ["id"],
+            }
+        ),
+        json.dumps(
+            {
+                "type": "RECORD",
+                "stream": "users",
+                "record": {
+                    "id": 1,
+                    "name": "Alice",
+                    "email": "alice@example.com",
+                    "active": True,
+                },
+            }
+        ),
+        json.dumps(
+            {
+                "type": "RECORD",
+                "stream": "users",
+                "record": {
+                    "id": 2,
+                    "name": "Bob",
+                    "email": "bob@example.com",
+                    "active": False,
+                },
+            }
+        ),
     ]
 
 
@@ -88,8 +94,7 @@ def test_end_to_end_duckdb(
     tmp_path: Path,
 ):
     """Test end-to-end data loading with DuckDB."""
-    # Skip if DuckDB driver not available
-    pytest.importorskip("adbc_driver_duckdb")
+    duckdb = pytest.importorskip("duckdb")
 
     # Write messages to a file
     input_file = tmp_path / "input.jsonl"
@@ -103,8 +108,6 @@ def test_end_to_end_duckdb(
         target.listen(f)
 
     # Verify data was loaded
-    import duckdb
-
     db_path = duckdb_config["uri"]
     conn = duckdb.connect(db_path)
 
@@ -113,9 +116,7 @@ def test_end_to_end_duckdb(
     assert count == 2
 
     # Check data
-    rows = conn.execute(
-        "SELECT id, name, email, active FROM users ORDER BY id"
-    ).fetchall()
+    rows = conn.execute("SELECT id, name, email, active FROM users ORDER BY id").fetchall()
 
     assert rows[0] == (1, "Alice", "alice@example.com", True)
     assert rows[1] == (2, "Bob", "bob@example.com", False)
@@ -125,9 +126,7 @@ def test_end_to_end_duckdb(
 
 def test_append_mode(duckdb_config: dict, singer_messages: list[str], tmp_path: Path):
     """Test that append mode adds to existing tables."""
-    pytest.importorskip("adbc_driver_duckdb")
-
-    import duckdb
+    duckdb = pytest.importorskip("duckdb")
 
     input_file = tmp_path / "input.jsonl"
     input_file.write_text("\n".join(singer_messages))
@@ -158,9 +157,7 @@ def test_append_mode(duckdb_config: dict, singer_messages: list[str], tmp_path: 
 
 def test_replace_mode(duckdb_config: dict, singer_messages: list[str], tmp_path: Path):
     """Test that replace mode drops and recreates tables."""
-    pytest.importorskip("adbc_driver_duckdb")
-
-    import duckdb
+    duckdb = pytest.importorskip("duckdb")
 
     input_file = tmp_path / "input.jsonl"
     input_file.write_text("\n".join(singer_messages))
@@ -193,8 +190,6 @@ def test_replace_mode(duckdb_config: dict, singer_messages: list[str], tmp_path:
 
 def test_fail_mode(duckdb_config: dict, singer_messages: list[str], tmp_path: Path):
     """Test that fail mode raises an error when table exists."""
-    pytest.importorskip("adbc_driver_duckdb")
-
     input_file = tmp_path / "input.jsonl"
     input_file.write_text("\n".join(singer_messages))
 
@@ -215,7 +210,7 @@ def test_fail_mode(duckdb_config: dict, singer_messages: list[str], tmp_path: Pa
 
 def test_config_schema():
     """Test that config schema is properly defined."""
-    target = TargetADBC(config={"driver": "adbc_driver_duckdb"}, validate_config=False)
+    target = TargetADBC(config={"driver": "duckdb"}, validate_config=False)
     schema = target.config_jsonschema
 
     # Check required fields

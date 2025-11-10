@@ -1,5 +1,5 @@
 {
-  "driver": "adbc_driver_duckdb",
+  "driver": "duckdb",
   "uri": "fedidb.duckdb",
   "batch_size": 1000,
   "add_record_metadata": false,

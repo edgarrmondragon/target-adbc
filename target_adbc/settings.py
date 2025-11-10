@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from singer_sdk import typing as th
 
 
@@ -14,10 +12,7 @@ class TargetADBCSettings(th.PropertiesList):
         "driver",
         th.StringType,
         required=True,
-        description=(
-            "ADBC driver name or entrypoint. Examples: 'adbc_driver_duckdb', "
-            "'adbc_driver_sqlite', 'adbc_driver_postgresql'"
-        ),
+        description=("ADBC driver name. Examples: 'duckdb', 'sqlite', 'postgresql'"),
     )
 
     uri = th.Property(

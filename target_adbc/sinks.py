@@ -5,8 +5,8 @@ from __future__ import annotations
 import datetime
 from typing import Any
 
-import adbc_driver_manager as adbc
 import pyarrow as pa
+from adbc_driver_manager import dbapi
 from singer_sdk.sinks import BatchSink
 
 
@@ -18,11 +18,11 @@ class ADBCSink(BatchSink):
     def __init__(self, *args, **kwargs):
         """Initialize the ADBC sink."""
         super().__init__(*args, **kwargs)
-        self._connection: adbc.AdbcConnection | None = None
+        self._connection: dbapi.Connection | None = None
         self._table_exists: dict[str, bool] = {}
 
     @property
-    def connection(self) -> adbc.AdbcConnection:
+    def connection(self):
         """Get or create ADBC connection."""
         if self._connection is None:
             driver = self.config["driver"]
@@ -31,60 +31,31 @@ class ADBCSink(BatchSink):
 
             self.logger.info(f"Connecting to database using driver: {driver}")
 
-            # Use dbapi interface for specific drivers
-            if driver == "adbc_driver_duckdb":
-                import adbc_driver_duckdb.dbapi as dbapi
+            # Build db_kwargs for the connection
+            db_kwargs = connection_kwargs.copy()
 
-                # DuckDB can accept a path or use in-memory
-                if uri:
-                    # Extract path from URI
-                    # "duckdb:///path/to/db" -> "/path/to/db" (absolute, 3 slashes)
-                    # "duckdb://path/to/db" -> "path/to/db" (relative, 2 slashes)
-                    # "duckdb://:memory:" -> ":memory:"
+            # Handle URI based on driver
+            if uri:
+                if driver == "duckdb":
+                    # DuckDB uses 'path' parameter
+                    # Handle different URI formats
                     if uri.startswith("duckdb:///"):
-                        path = uri[len("duckdb://"):]  # Keep the leading / from ///
+                        path = uri[len("duckdb://") :]  # Keep the leading / from ///
                     elif uri.startswith("duckdb://"):
-                        path = uri[len("duckdb://"):]
+                        path = uri[len("duckdb://") :]
                     else:
                         path = uri
-                    self._connection = dbapi.connect(path, **connection_kwargs)
-                else:
-                    # No URI means in-memory database
-                    self._connection = dbapi.connect(":memory:", **connection_kwargs)
-
-            elif driver == "adbc_driver_sqlite":
-                import adbc_driver_sqlite.dbapi as dbapi
-
-                if uri:
+                    db_kwargs["path"] = path
+                elif driver == "sqlite":
+                    # SQLite also uses 'path' parameter
                     path = uri.replace("sqlite://", "")
-                    self._connection = dbapi.connect(path, **connection_kwargs)
+                    db_kwargs["path"] = path
                 else:
-                    self._connection = dbapi.connect(**connection_kwargs)
+                    # For other drivers (PostgreSQL, etc.), pass uri as-is
+                    db_kwargs["uri"] = uri
 
-            elif driver == "adbc_driver_postgresql":
-                import adbc_driver_postgresql.dbapi as dbapi
-
-                # PostgreSQL uses connection_kwargs for connection params
-                params = connection_kwargs.copy()
-                if uri:
-                    params["uri"] = uri
-
-                self._connection = dbapi.connect(**params)
-
-            else:
-                # Generic fallback - try to import the driver's dbapi module
-                try:
-                    import importlib
-                    dbapi_module = importlib.import_module(f"{driver}.dbapi")
-                    params = connection_kwargs.copy()
-                    if uri:
-                        params["uri"] = uri
-                    self._connection = dbapi_module.connect(**params)
-                except (ImportError, AttributeError) as e:
-                    raise ValueError(
-                        f"Unsupported or unavailable ADBC driver: {driver}. "
-                        f"Make sure the driver package is installed. Error: {e}"
-                    ) from e
+            # Use the unified dbapi.connect interface
+            self._connection = dbapi.connect(driver=driver, db_kwargs=db_kwargs)
 
         return self._connection
 
@@ -103,22 +74,25 @@ class ADBCSink(BatchSink):
 
     def _python_type_to_arrow(self, python_type: dict[str, Any]) -> pa.DataType:
         """Convert JSON Schema type to PyArrow data type."""
-        type_mapping = {
+        type_mapping: dict[str, pa.DataType] = {
             "string": pa.string(),
             "integer": pa.int64(),
             "number": pa.float64(),
             "boolean": pa.bool_(),
         }
 
-        json_type = python_type.get("type")
+        json_type: str | list[str] | None = python_type.get("type")
         json_format = python_type.get("format")
 
         # Handle array of types (nullable fields)
         if isinstance(json_type, list):
             # Filter out 'null' and get the actual type
             non_null_types = [t for t in json_type if t != "null"]
-            if non_null_types:
-                json_type = non_null_types[0]
+            json_type_str = non_null_types[0] if non_null_types else "string"
+        elif json_type is not None:
+            json_type_str = str(json_type)
+        else:
+            json_type_str = "string"
 
         # Handle datetime formats
         if json_format == "date-time":
@@ -129,16 +103,16 @@ class ADBCSink(BatchSink):
             return pa.time64("us")
 
         # Handle object type (JSON)
-        if json_type == "object":
+        if json_type_str == "object":
             return pa.string()  # Store as JSON string
 
         # Handle array type
-        if json_type == "array":
+        if json_type_str == "array":
             items_type = python_type.get("items", {})
             item_arrow_type = self._python_type_to_arrow(items_type)
             return pa.list_(item_arrow_type)
 
-        return type_mapping.get(json_type, pa.string())
+        return type_mapping.get(json_type_str, pa.string())
 
     def _create_arrow_schema(self, records: list[dict]) -> pa.Schema:
         """Create PyArrow schema from records and Singer schema."""
@@ -154,13 +128,15 @@ class ADBCSink(BatchSink):
 
         # Add metadata columns if configured
         if self.config.get("add_record_metadata", True):
-            fields.extend([
-                pa.field("_sdc_extracted_at", pa.timestamp("us", tz="UTC")),
-                pa.field("_sdc_received_at", pa.timestamp("us", tz="UTC")),
-                pa.field("_sdc_batched_at", pa.timestamp("us", tz="UTC")),
-                pa.field("_sdc_sequence", pa.int64()),
-                pa.field("_sdc_table_version", pa.int64()),
-            ])
+            fields.extend(
+                [
+                    pa.field("_sdc_extracted_at", pa.timestamp("us", tz="UTC")),
+                    pa.field("_sdc_received_at", pa.timestamp("us", tz="UTC")),
+                    pa.field("_sdc_batched_at", pa.timestamp("us", tz="UTC")),
+                    pa.field("_sdc_sequence", pa.int64()),
+                    pa.field("_sdc_table_version", pa.int64()),
+                ]
+            )
 
         return pa.schema(fields)
 
@@ -209,6 +185,7 @@ class ADBCSink(BatchSink):
         # Handle JSON objects/arrays as strings
         if pa.types.is_string(arrow_type) and isinstance(value, (dict, list)):
             import json
+
             return json.dumps(value)
 
         return value
@@ -239,7 +216,9 @@ class ADBCSink(BatchSink):
         except Exception as e:
             self.logger.error(f"Error creating Arrow table: {e}")
             self.logger.error(f"Schema: {schema}")
-            self.logger.error(f"Sample record: {normalized_records[0] if normalized_records else 'none'}")
+            self.logger.error(
+                f"Sample record: {normalized_records[0] if normalized_records else 'none'}"
+            )
             raise
 
     def _get_cache_key(self) -> str:
@@ -338,9 +317,7 @@ class ADBCSink(BatchSink):
             # Mark table as existing
             self._table_exists[cache_key] = True
 
-            self.logger.info(
-                f"Successfully inserted {len(records)} records into {full_table_name}"
-            )
+            self.logger.info(f"Successfully inserted {len(records)} records into {full_table_name}")
 
         except Exception as e:
             self.logger.error(f"Error inserting records: {e}")

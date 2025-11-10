@@ -5,7 +5,6 @@ from __future__ import annotations
 from singer_sdk import typing as th
 from singer_sdk.target_base import Target
 
-from target_adbc.settings import TargetADBCSettings
 from target_adbc.sinks import ADBCSink
 
 
@@ -23,10 +22,7 @@ class TargetADBC(Target):
             "driver",
             th.StringType,
             required=True,
-            description=(
-                "ADBC driver name or entrypoint. Examples: 'adbc_driver_duckdb', "
-                "'adbc_driver_sqlite', 'adbc_driver_postgresql'"
-            ),
+            description="ADBC driver name. Examples: 'duckdb', 'sqlite', 'postgresql'",
         ),
         th.Property(
             "uri",
