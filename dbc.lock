@@ -8,6 +8,12 @@ platform = 'macos_arm64'
 checksum = 'f6b443ad2699162750ce4e9f83c86dca6bd5223fed38fc1ee82591cb993d55ca'
 
 [[drivers]]
+name = 'postgresql'
+version = '1.8.0'
+platform = 'macos_arm64'
+checksum = '952fba28c31b835f769542b324e5655cfb0eaff41401a80617516a96bdc38720'
+
+[[drivers]]
 name = 'sqlite'
 version = '1.8.0'
 platform = 'macos_arm64'
