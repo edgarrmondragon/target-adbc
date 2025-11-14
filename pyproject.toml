@@ -33,6 +33,19 @@ build-backend = "hatchling.build"
 [tool.ruff]
 line-length = 100
 
+[tool.ruff.lint]
+extend-select = [
+    "S",
+    "TC",
+    "UP",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**/*.py" = [
+    "S101",  # pytest uses assert statements
+    "S608",  # Raw SQL queries are OK in tests
+]
+
 [tool.mypy]
 warn_redundant_casts = true
 warn_unused_ignores = true
