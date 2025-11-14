@@ -26,35 +26,9 @@ class ADBCSink(BatchSink):
         """Get or create ADBC connection."""
         if self._connection is None:
             driver = self.config["driver"]
-            uri = self.config.get("uri")
-            connection_kwargs = self.config.get("connection_kwargs", {})
+            self.logger.info("Connecting to database using driver: %s", driver)
 
-            self.logger.info(f"Connecting to database using driver: {driver}")
-
-            # Build db_kwargs for the connection
-            db_kwargs = connection_kwargs.copy()
-
-            # Handle URI based on driver
-            if uri:
-                if driver == "duckdb":
-                    # DuckDB uses 'path' parameter
-                    # Handle different URI formats
-                    if uri.startswith("duckdb:///"):
-                        path = uri[len("duckdb://") :]  # Keep the leading / from ///
-                    elif uri.startswith("duckdb://"):
-                        path = uri[len("duckdb://") :]
-                    else:
-                        path = uri
-                    db_kwargs["path"] = path
-                elif driver == "sqlite":
-                    # SQLite also uses 'path' parameter
-                    path = uri.replace("sqlite://", "")
-                    db_kwargs["path"] = path
-                else:
-                    # For other drivers (PostgreSQL, etc.), pass uri as-is
-                    db_kwargs["uri"] = uri
-
-            # Use the unified dbapi.connect interface
+            db_kwargs = self.config.get(driver, {})
             self._connection = dbapi.connect(driver=driver, db_kwargs=db_kwargs)
 
         return self._connection
@@ -114,29 +88,14 @@ class ADBCSink(BatchSink):
 
         return type_mapping.get(json_type_str, pa.string())
 
-    def _create_arrow_schema(self, records: list[dict]) -> pa.Schema:
+    def _create_arrow_schema(self, schema: dict) -> pa.Schema:
         """Create PyArrow schema from records and Singer schema."""
         fields = []
 
-        # Get Singer schema if available
-        singer_schema = self.schema
-
-        for key in singer_schema.get("properties", {}):
-            prop = singer_schema["properties"][key]
+        for key in schema.get("properties", {}):
+            prop = schema["properties"][key]
             arrow_type = self._json_type_to_arrow(prop)
             fields.append(pa.field(key, arrow_type))
-
-        # Add metadata columns if configured
-        if self.config.get("add_record_metadata", True):
-            fields.extend(
-                [
-                    pa.field("_sdc_extracted_at", pa.timestamp("us", tz="UTC")),
-                    pa.field("_sdc_received_at", pa.timestamp("us", tz="UTC")),
-                    pa.field("_sdc_batched_at", pa.timestamp("us", tz="UTC")),
-                    pa.field("_sdc_sequence", pa.int64()),
-                    pa.field("_sdc_table_version", pa.int64()),
-                ]
-            )
 
         return pa.schema(fields)
 
@@ -199,7 +158,7 @@ class ADBCSink(BatchSink):
         prepared_records = [self._prepare_record(r) for r in records]
 
         # Create schema
-        schema = self._create_arrow_schema(records)
+        schema = self._create_arrow_schema(self.schema)
 
         # Convert each record's values according to the schema
         normalized_records = []
@@ -213,12 +172,8 @@ class ADBCSink(BatchSink):
         # Use PyArrow's from_pylist for simpler conversion
         try:
             return pa.Table.from_pylist(normalized_records, schema=schema)
-        except Exception as e:
-            self.logger.error(f"Error creating Arrow table: {e}")
-            self.logger.error(f"Schema: {schema}")
-            self.logger.error(
-                f"Sample record: {normalized_records[0] if normalized_records else 'none'}"
-            )
+        except Exception:
+            self.logger.error("Error creating Arrow table")
             raise
 
     def _get_cache_key(self) -> str:
@@ -243,9 +198,9 @@ class ADBCSink(BatchSink):
             with self.connection.cursor() as cursor:
                 cursor.execute(f"DROP TABLE IF EXISTS {full_table_name}")
             self.connection.commit()
-            self.logger.info(f"Dropped table {full_table_name}")
-        except Exception as e:
-            self.logger.warning(f"Error dropping table {full_table_name}: {e}")
+            self.logger.info("Dropped table %s", full_table_name)
+        except Exception:
+            self.logger.warning("Error dropping table %s", full_table_name)
 
     def process_batch(self, context: dict) -> None:
         """Process a batch of records.
@@ -259,7 +214,7 @@ class ADBCSink(BatchSink):
             self.logger.info("No records to process in this batch")
             return
 
-        self.logger.info(f"Processing batch of {len(records)} records")
+        self.logger.info("Processing batch of %s records", len(records))
 
         # Convert records to Arrow table
         arrow_table = self._records_to_arrow_table(records)
@@ -267,11 +222,7 @@ class ADBCSink(BatchSink):
         # Get table name
         table_name = self._get_table_name()
         schema_name = self._get_schema_name()
-
-        if schema_name:
-            full_table_name = f"{schema_name}.{table_name}"
-        else:
-            full_table_name = table_name
+        full_table_name = f"{schema_name}.{table_name}" if schema_name else table_name
 
         # Determine ingest mode and handle overwrite behavior
         cache_key = self._get_cache_key()
@@ -284,31 +235,33 @@ class ADBCSink(BatchSink):
         # Handle overwrite behavior on first batch
         if is_first_batch and table_exists_in_db:
             if overwrite_behavior == "replace":
-                self.logger.info(f"Dropping existing table {full_table_name} (replace mode)")
+                self.logger.info("Dropping existing table %s (replace mode)", full_table_name)
                 self._drop_table(full_table_name)
                 table_exists_in_db = False
             elif overwrite_behavior == "fail":
                 raise RuntimeError(
-                    f"Table {full_table_name} already exists and overwrite_behavior is 'fail'"
+                    "Table %s already exists and overwrite_behavior is 'fail'",
+                    full_table_name,
                 )
             # For 'append' mode, we'll just append to the existing table
 
         # Determine ingest mode
         if table_exists_in_db:
             mode = "append"
-            self.logger.info(f"Appending to existing table {full_table_name}")
+            self.logger.info("Appending to existing table %s", full_table_name)
         else:
             mode = "create"
-            self.logger.info(f"Creating table {full_table_name}")
+            self.logger.info("Creating table %s", full_table_name)
 
         # Insert data using ADBC
         try:
             with self.connection.cursor() as cursor:
                 # Use adbc_ingest for efficient bulk insert
                 cursor.adbc_ingest(
-                    full_table_name,
+                    table_name,
                     arrow_table,
                     mode=mode,
+                    db_schema_name=schema_name,
                 )
 
             # Commit the transaction
@@ -317,12 +270,14 @@ class ADBCSink(BatchSink):
             # Mark table as existing
             self._table_exists[cache_key] = True
 
-            self.logger.info(f"Successfully inserted {len(records)} records into {full_table_name}")
+            self.logger.info(
+                "Successfully inserted %s records into %s",
+                len(records),
+                full_table_name,
+            )
 
-        except Exception as e:
-            self.logger.error(f"Error inserting records: {e}")
-            self.logger.error(f"Table: {full_table_name}, Mode: {mode}")
-            self.logger.error(f"Arrow schema: {arrow_table.schema}")
+        except Exception:
+            self.logger.error("Error inserting records")
             raise
 
     def clean_up(self) -> None:

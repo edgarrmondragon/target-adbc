@@ -1,0 +1,109 @@
+{
+  "plugin_type": "extractors",
+  "name": "tap-fedidb",
+  "namespace": "tap_fedidb",
+  "variant": "edgarrmondragon",
+  "label": "FediDB.org",
+  "docs": "https://hub.meltano.com/extractors/tap-fedidb--edgarrmondragon",
+  "repo": "https://github.com/edgarrmondragon/tap-fedidb",
+  "pip_url": "tap-fedidb",
+  "executable": "tap-fedidb",
+  "description": "Fediverse Network Statistics",
+  "logo_url": "https://hub.meltano.com/assets/logos/extractors/fedidb.svg",
+  "capabilities": [
+    "about",
+    "activate-version",
+    "batch",
+    "catalog",
+    "discover",
+    "schema-flattening",
+    "state",
+    "stream-maps",
+    "structured-logging"
+  ],
+  "settings_group_validation": [
+    []
+  ],
+  "settings": [
+    {
+      "name": "batch_config.encoding.compression",
+      "kind": "options",
+      "label": "Batch Compression Format",
+      "description": "Compression format to use for batch files.",
+      "options": [
+        {
+          "label": "GZIP",
+          "value": "gzip"
+        },
+        {
+          "label": "None",
+          "value": "none"
+        }
+      ]
+    },
+    {
+      "name": "batch_config.encoding.format",
+      "kind": "options",
+      "label": "Batch Encoding Format",
+      "description": "Format to use for batch files.",
+      "options": [
+        {
+          "label": "JSONL",
+          "value": "jsonl"
+        },
+        {
+          "label": "Parquet",
+          "value": "parquet"
+        }
+      ]
+    },
+    {
+      "name": "batch_config.storage.prefix",
+      "kind": "string",
+      "label": "Batch Storage Prefix",
+      "description": "Prefix to use when writing batch files."
+    },
+    {
+      "name": "batch_config.storage.root",
+      "kind": "string",
+      "label": "Batch Storage Root",
+      "description": "Root path to use when writing batch files."
+    },
+    {
+      "name": "faker_config.locale",
+      "kind": "array",
+      "label": "Faker Locale",
+      "description": "One or more LCID locale strings to produce localized output for: https://faker.readthedocs.io/en/master/#localization"
+    },
+    {
+      "name": "faker_config.seed",
+      "kind": "string",
+      "label": "Faker Seed",
+      "description": "Value to seed the Faker generator for deterministic output: https://faker.readthedocs.io/en/master/#seeding-the-generator"
+    },
+    {
+      "name": "flattening_enabled",
+      "kind": "boolean",
+      "label": "Enable Schema Flattening",
+      "description": "'True' to enable schema flattening and automatically expand nested properties."
+    },
+    {
+      "name": "flattening_max_depth",
+      "kind": "integer",
+      "label": "Max Flattening Depth",
+      "description": "The max depth to flatten schemas."
+    },
+    {
+      "name": "stream_map_config",
+      "kind": "object",
+      "label": "User Stream Map Configuration",
+      "description": "User-defined config values to be used within map expressions."
+    },
+    {
+      "name": "stream_maps",
+      "kind": "object",
+      "label": "Stream Maps",
+      "description": "Config object for stream maps capability. For more information check out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html)."
+    }
+  ]
+}

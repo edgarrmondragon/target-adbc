@@ -6,3 +6,9 @@ name = 'duckdb'
 version = '1.4.0'
 platform = 'macos_arm64'
 checksum = 'f6b443ad2699162750ce4e9f83c86dca6bd5223fed38fc1ee82591cb993d55ca'
+
+[[drivers]]
+name = 'sqlite'
+version = '1.8.0'
+platform = 'macos_arm64'
+checksum = '3c495f66d393befbcd1b36fb5fbd9dc41b381e98c4b385680037e14eddb1a5f2'

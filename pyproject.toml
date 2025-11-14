@@ -17,6 +17,7 @@ target-adbc = "target_adbc.target:TargetADBC.cli"
 
 [dependency-groups]
 dev = [
+    "coverage>=7.11.3",
     "mypy>=1.18.0",
     "pyarrow-stubs>=20.0.0.20251107",
     "pytest>=9.0.0",

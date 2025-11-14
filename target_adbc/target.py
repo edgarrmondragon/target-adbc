@@ -25,22 +25,40 @@ class TargetADBC(Target):
             description="ADBC driver name. Examples: 'duckdb', 'sqlite', 'postgresql'",
         ),
         th.Property(
-            "uri",
-            th.StringType,
-            description=(
-                "Database path or connection string. Format depends on the driver. "
-                "For DuckDB/SQLite, use a file path (e.g., 'my_db.duckdb'). "
-                "For PostgreSQL, use a connection string or set connection_kwargs."
+            "duckdb",
+            th.ObjectType(
+                th.Property(
+                    "path",
+                    th.StringType,
+                    required=True,
+                    description="Path to the DuckDB database file.",
+                ),
             ),
+            description="DuckDB configuration.",
         ),
         th.Property(
-            "connection_kwargs",
-            th.ObjectType(),
-            description=(
-                "Additional keyword arguments to pass to the ADBC connection. "
-                "These are driver-specific and can include options like username, "
-                "password, host, port, etc."
+            "sqlite",
+            th.ObjectType(
+                th.Property(
+                    "uri",
+                    th.StringType,
+                    required=True,
+                    description="URI to the SQLite database file.",
+                ),
             ),
+            description="SQLite configuration.",
+        ),
+        th.Property(
+            "postgresql",
+            th.ObjectType(
+                th.Property(
+                    "uri",
+                    th.StringType,
+                    required=True,
+                    description="URI to the PostgreSQL database.",
+                ),
+            ),
+            description="PostgreSQL configuration.",
         ),
         th.Property(
             "default_target_schema",

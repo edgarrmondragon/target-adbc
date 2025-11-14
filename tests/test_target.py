@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -16,7 +17,9 @@ def duckdb_config(tmp_path: Path) -> dict:
     db_path = tmp_path / "test.duckdb"
     return {
         "driver": "duckdb",
-        "uri": str(db_path),  # Just use the path, not duckdb:/// URI
+        "duckdb": {
+            "path": str(db_path),
+        },
         "batch_size": 100,
         "add_record_metadata": False,
     }
@@ -108,7 +111,7 @@ def test_end_to_end_duckdb(
         target.listen(f)
 
     # Verify data was loaded
-    db_path = duckdb_config["uri"]
+    db_path = duckdb_config["duckdb"]["path"]
     conn = duckdb.connect(db_path)
 
     # Check record count
@@ -118,6 +121,36 @@ def test_end_to_end_duckdb(
     # Check data
     rows = conn.execute("SELECT id, name, email, active FROM users ORDER BY id").fetchall()
 
+    assert rows[0] == (1, "Alice", "alice@example.com", True)
+    assert rows[1] == (2, "Bob", "bob@example.com", False)
+
+    conn.close()
+
+
+def test_end_to_end_sqlite(singer_messages: list[str], tmp_path: Path) -> None:
+    """Test end-to-end data loading with SQLite."""
+    db_path = tmp_path / "test.sqlite"
+
+    input_file = tmp_path / "input.jsonl"
+    input_file.write_text("\n".join(singer_messages))
+
+    # Create target
+    target = TargetADBC(config={"driver": "sqlite", "sqlite": {"uri": db_path.as_uri()}})
+
+    # Process messages
+    with open(input_file) as f:
+        target.listen(f)
+
+    # Verify data was loaded
+    conn = sqlite3.connect(db_path.as_posix())
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM users")
+    count = cursor.fetchone()[0]
+    assert count == 2
+
+    # Check data
+    cursor.execute("SELECT id, name, email, active FROM users ORDER BY id")
+    rows = cursor.fetchall()
     assert rows[0] == (1, "Alice", "alice@example.com", True)
     assert rows[1] == (2, "Bob", "bob@example.com", False)
 
@@ -137,7 +170,7 @@ def test_append_mode(duckdb_config: dict, singer_messages: list[str], tmp_path: 
         target.listen(f)
 
     # Check count after first load
-    db_path = duckdb_config["uri"]
+    db_path = duckdb_config["duckdb"]["path"]
     conn = duckdb.connect(db_path)
     count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
     assert count == 2
@@ -168,7 +201,7 @@ def test_replace_mode(duckdb_config: dict, singer_messages: list[str], tmp_path:
         target.listen(f)
 
     # Check count after first load
-    db_path = duckdb_config["uri"]
+    db_path = duckdb_config["duckdb"]["path"]
     conn = duckdb.connect(db_path)
     count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
     assert count == 2
