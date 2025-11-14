@@ -187,7 +187,7 @@ class ADBCSink(BatchSink):
         try:
             with self.connection.cursor() as cursor:
                 # Try to query the table - if it fails, it doesn't exist
-                cursor.execute(f"SELECT 1 FROM {full_table_name} LIMIT 0")
+                cursor.execute(f"SELECT 1 FROM {full_table_name} LIMIT 0")  # noqa: S608
                 return True
         except Exception:
             return False
