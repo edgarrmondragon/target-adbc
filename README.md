@@ -35,17 +35,17 @@ uv sync --all-extras
 
 Any database with an ADBC driver is supported. Popular options include:
 
-| Database | Driver Name in Config | Install with `dbc` (Recommended) | Install with `pip` |
-|----------|----------------------|----------------------------------|-------------------|
-| **DuckDB** | `duckdb` | `dbc install duckdb` | *(Use `dbc` or build from source)* |
-| **SQLite** | `sqlite` | `dbc install sqlite` | `pip install adbc-driver-sqlite` |
-| **PostgreSQL** | `postgresql` | `dbc install postgresql` | `pip install adbc-driver-postgresql` |
-| **Flight SQL** | `flightsql` | `dbc install flightsql` | `pip install adbc-driver-flightsql` |
-| **Snowflake** | `snowflake` | `dbc install snowflake` | `pip install adbc-driver-snowflake` |
+| Database | Driver Name in Config | Install with `dbc` |
+|----------|----------------------|--------------------|
+| **DuckDB** | `duckdb` | `dbc install duckdb` |
+| **SQLite** | `sqlite` | `dbc install sqlite` |
+| **PostgreSQL** | `postgresql` | `dbc install postgresql` |
+| **Flight SQL** | `flightsql` | `dbc install flightsql` |
+| **Snowflake** | `snowflake` | `dbc install snowflake` |
 
 ### Installing ADBC Drivers
 
-We recommend using [`dbc`](https://docs.columnar.tech/dbc/) to install ADBC drivers, as it provides pre-built binaries and simplifies driver management across platforms:
+Use [`dbc`](https://docs.columnar.tech/dbc/) to install ADBC drivers. The `dbc` tool provides pre-built binaries and simplifies driver management across platforms, making it straightforward to get started without worrying about driver-specific package dependencies:
 
 ```bash
 # Install dbc (one-time setup)
@@ -57,7 +57,7 @@ dbc install postgresql
 dbc install sqlite
 ```
 
-**Note:** Some drivers (like DuckDB) are not available as standalone PyPI packages and require `dbc` or building from source. Other drivers (SQLite, PostgreSQL, Flight SQL, Snowflake) can be installed via pip if preferred.
+**Why `dbc`?** The ADBC driver manager package (`adbc-driver-manager`) uses a single API regardless of the database you're connecting to. While users could install driver packages separately, `dbc` makes this experience seamless by handling driver manifests and pre-built binaries automatically.
 
 See the [ADBC documentation](https://arrow.apache.org/adbc/current/driver/installation.html) for a full list of available drivers.
 
@@ -380,7 +380,7 @@ This target implements the Singer specification:
 
 If you encounter connection errors:
 
-1. Verify the driver is installed: `pip list | grep adbc-driver`
+1. Ensure the driver is installed with `dbc install <driver-name>` (e.g., `dbc install duckdb`)
 2. Check your connection parameters match the driver's requirements
 3. Test the connection separately using the ADBC Python API
 
