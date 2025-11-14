@@ -80,7 +80,9 @@ Create a `config.json` file with your database connection details:
 ```json
 {
   "driver": "duckdb",
-  "uri": "my_database.duckdb",
+  "duckdb": {
+    "path": "my_database.duckdb"
+  },
   "batch_size": 10000,
   "overwrite_behavior": "append"
 }
@@ -91,7 +93,9 @@ Create a `config.json` file with your database connection details:
 ```json
 {
   "driver": "sqlite",
-  "uri": "my_database.sqlite",
+  "sqlite": {
+    "uri": "my_database.sqlite"
+  },
   "batch_size": 5000
 }
 ```
@@ -101,12 +105,8 @@ Create a `config.json` file with your database connection details:
 ```json
 {
   "driver": "postgresql",
-  "connection_kwargs": {
-    "username": "myuser",
-    "password": "mypass",
-    "host": "localhost",
-    "port": 5432,
-    "db_name": "mydb"
+  "postgresql": {
+    "uri": "postgresql://myuser:mypass@localhost:5432/mydb"
   },
   "default_target_schema": "public",
   "batch_size": 10000
@@ -118,8 +118,9 @@ Create a `config.json` file with your database connection details:
 | Setting | Required | Default | Description |
 |---------|----------|---------|-------------|
 | `driver` | Yes | - | ADBC driver name (e.g., `duckdb`, `sqlite`, `postgresql`) |
-| `uri` | No | - | Database path or connection string. For DuckDB/SQLite, use a file path (e.g., `my_db.duckdb`). For PostgreSQL, use a connection string or set `connection_kwargs`. |
-| `connection_kwargs` | No | `{}` | Driver-specific connection parameters (username, password, host, port, etc.) |
+| `duckdb.path` | No* | - | Path to DuckDB database file (required when `driver` is `duckdb`) |
+| `sqlite.uri` | No* | - | Path to SQLite database file (required when `driver` is `sqlite`) |
+| `postgresql.uri` | No* | - | PostgreSQL connection string (required when `driver` is `postgresql`) |
 | `default_target_schema` | No | - | Default schema for tables |
 | `table_prefix` | No | `""` | Prefix to add to all table names |
 | `table_suffix` | No | `""` | Suffix to add to all table names |
@@ -127,6 +128,8 @@ Create a `config.json` file with your database connection details:
 | `batch_size` | No | `10000` | Number of rows to process per batch |
 | `add_record_metadata` | No | `true` | Add metadata columns (`_sdc_*`) to tables |
 | `varchar_length` | No | `255` | Default VARCHAR length when not specified |
+
+*Driver-specific settings are required based on the selected `driver`.
 
 ### Overwrite Behaviors
 
@@ -167,32 +170,82 @@ plugins:
   loaders:
   - name: target-adbc
     namespace: target_adbc
-    pip_url: -e /path/to/target-adbc
+    pip_url: -e .
     executable: target-adbc
     settings:
     - name: driver
-      kind: string
+      kind: options
       description: ADBC driver name (e.g., duckdb, sqlite, postgresql)
-    - name: uri
+      options:
+      - label: DuckDB
+        value: duckdb
+      - label: SQLite
+        value: sqlite
+      - label: PostgreSQL
+        value: postgresql
+
+    # DuckDB settings
+    - name: duckdb.path
       kind: string
-      description: Database path or connection string
-    - name: connection_kwargs
-      kind: object
-      description: Additional connection parameters
+      description: Path to the DuckDB database file
+
+    # SQLite settings
+    - name: sqlite.uri
+      kind: string
+      description: URI to the SQLite database file
+
+    # PostgreSQL settings
+    - name: postgresql.uri
+      kind: string
+      description: PostgreSQL connection string
+
+    # General settings
+    - name: default_target_schema
+      kind: string
+      description: Default schema to use for tables if not specified in stream name
+    - name: table_prefix
+      kind: string
+      description: Prefix to add to all table names
+    - name: table_suffix
+      kind: string
+      description: Suffix to add to all table names
     - name: batch_size
       kind: integer
-      value: 10000
+      description: Maximum number of rows to process in a single batch
     - name: overwrite_behavior
-      kind: string
-      value: append
+      kind: options
+      description: Behavior when table already exists
+      options:
+      - label: Append
+        value: append
+      - label: Replace
+        value: replace
+      - label: Fail
+        value: fail
     - name: add_record_metadata
       kind: boolean
-      value: true
+      description: Add metadata columns to the output tables
+    - name: varchar_length
+      kind: integer
+      description: Default length for VARCHAR columns when not specified
+
+  # Configured variant for DuckDB
+  - name: target-adbc-duckdb
+    inherit_from: target-adbc
     config:
       driver: duckdb
-      uri: ${MELTANO_PROJECT_ROOT}/output/warehouse.duckdb
-      batch_size: 10000
-      overwrite_behavior: append
+      overwrite_behavior: replace
+      duckdb:
+        path: ${MELTANO_PROJECT_ROOT}/output/warehouse.duckdb
+
+  # Configured variant for SQLite
+  - name: target-adbc-sqlite
+    inherit_from: target-adbc
+    config:
+      driver: sqlite
+      overwrite_behavior: replace
+      sqlite:
+        uri: ${MELTANO_PROJECT_ROOT}/output/warehouse.sqlite
 ```
 
 ### Run with Meltano
@@ -217,7 +270,9 @@ EOF
 cat << 'EOF' > config.json
 {
   "driver": "duckdb",
-  "uri": "users.duckdb"
+  "duckdb": {
+    "path": "users.duckdb"
+  }
 }
 EOF
 
@@ -235,12 +290,8 @@ duckdb users.duckdb -c "SELECT * FROM users"
 cat << 'EOF' > pg_config.json
 {
   "driver": "postgresql",
-  "connection_kwargs": {
-    "username": "postgres",
-    "password": "secret",
-    "host": "localhost",
-    "port": 5432,
-    "db_name": "analytics"
+  "postgresql": {
+    "uri": "postgresql://postgres:secret@localhost:5432/analytics"
   },
   "default_target_schema": "raw_data",
   "overwrite_behavior": "append"
@@ -274,13 +325,14 @@ dbc install duckdb sqlite
 uv run pytest
 
 # Run with coverage
-uv run pytest --cov=target_adbc
+uv run coverage run -m pytest
 
 # Type checking
-uv run mypy target_adbc
+uv run mypy target_adbc tests
 
 # Linting
-uv run ruff check target_adbc
+uv run ruff check target_adbc tests
+uv run ruff format target_adbc tests
 ```
 
 ## Architecture

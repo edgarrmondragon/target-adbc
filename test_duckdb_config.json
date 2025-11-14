@@ -1,6 +1,8 @@
 {
   "driver": "duckdb",
-  "uri": "fedidb.duckdb",
+  "duckdb": {
+    "path": "fedidb.duckdb"
+  },
   "batch_size": 1000,
   "add_record_metadata": false
 }
