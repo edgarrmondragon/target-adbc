@@ -5,11 +5,25 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
+from singer_sdk.testing import get_target_test_class
 
 from target_adbc.target import TargetADBC
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+# Standard Target Tests
+StandardTargetTests = get_target_test_class(
+    target_class=TargetADBC,
+    config={
+        "driver": "duckdb",
+    },
+)
+
+
+class TestTargetStandard(StandardTargetTests):
+    """Standard Target Tests."""
 
 
 def test_target_initialization(duckdb_config: dict):

@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+from singer_sdk.testing import get_target_test_class
 
 
 @pytest.fixture
@@ -63,3 +64,20 @@ def singer_messages() -> list[str]:
             }
         ),
     ]
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Mark built-in tests that are expected to fail."""
+    failing_tests = {
+        "test_target_special_chars_in_attributes": pytest.mark.xfail(
+            strict=True,
+            reason="Table names with special characters are not supported. "
+            "Parser error with characters like ':', '!', '?' in table names. "
+            "GitHub issue: Create issue for special character support in table names",
+        ),
+    }
+
+    for item in items:
+        test_name = item.name
+        if test_name in failing_tests:
+            item.add_marker(failing_tests[test_name])
