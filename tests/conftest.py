@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 
 import pytest
-from singer_sdk.testing import get_target_test_class
 
 
 @pytest.fixture
