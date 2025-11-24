@@ -22,7 +22,7 @@ StandardTargetTests = get_target_test_class(
 )
 
 
-class TestTargetStandard(StandardTargetTests):
+class TestTargetStandard(StandardTargetTests):  # type: ignore[misc,valid-type]
     """Standard Target Tests."""
 
 
