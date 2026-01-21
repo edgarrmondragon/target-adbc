@@ -35,9 +35,15 @@ line-length = 100
 
 [tool.ruff.lint]
 extend-select = [
-    "S",
-    "TC",
-    "UP",
+    "S",    # https://docs.astral.sh/ruff/rules/#flake8-bandit-s
+    "RSE",  # https://docs.astral.sh/ruff/rules/#flake8-raise-rse
+    "RET",  # https://docs.astral.sh/ruff/rules/#flake8-return-ret
+    "SLF",  # https://docs.astral.sh/ruff/rules/#flake8-self-slf
+    "SIM",  # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
+    "TC",   # https://docs.astral.sh/ruff/rules/#flake8-type-checking-tc
+    "UP",   # https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "FURB", # https://docs.astral.sh/ruff/rules/#refurb-furb
+    "RUF",  # https://docs.astral.sh/ruff/rules/#ruff-specific-rules-ruf
 ]
 
 [tool.ruff.lint.per-file-ignores]

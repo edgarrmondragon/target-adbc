@@ -127,7 +127,7 @@ class ADBCSink(BatchSink):
                 if dt.tzinfo is None:
                     dt = dt.replace(tzinfo=datetime.timezone.utc)
                 return dt
-            elif isinstance(value, datetime.datetime):
+            if isinstance(value, datetime.datetime):
                 # Ensure timezone aware
                 if value.tzinfo is None:
                     return value.replace(tzinfo=datetime.timezone.utc)
@@ -137,7 +137,7 @@ class ADBCSink(BatchSink):
         if pa.types.is_date(arrow_type):
             if isinstance(value, str):
                 return datetime.datetime.fromisoformat(value).date()
-            elif isinstance(value, datetime.datetime):
+            if isinstance(value, datetime.datetime):
                 return value.date()
             return value
 

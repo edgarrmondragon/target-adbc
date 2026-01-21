@@ -124,9 +124,8 @@ def test_fail_mode(duckdb_config: dict, singer_messages: list[str], tmp_path: Pa
     fail_config["overwrite_behavior"] = "fail"
     target = TargetADBC(config=fail_config)
 
-    with pytest.raises(RuntimeError, match="already exists"):
-        with open(input_file) as f:
-            target.listen(f)
+    with pytest.raises(RuntimeError, match="already exists"), open(input_file) as f:
+        target.listen(f)
 
 
 def test_config_schema():
