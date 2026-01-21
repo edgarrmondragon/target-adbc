@@ -55,6 +55,9 @@ curl -LsSf https://dbc.columnar.tech/install.sh | sh
 dbc install duckdb
 dbc install postgresql
 dbc install sqlite
+
+# Install from a dbc.lock
+dbc sync
 ```
 
 **Why `dbc`?** The ADBC driver manager package (`adbc-driver-manager`) uses a single API regardless of the database you're connecting to. While users could install driver packages separately, `dbc` makes this experience seamless by handling driver manifests and pre-built binaries automatically.
