@@ -27,6 +27,8 @@ plugins:
         value: duckdb
       - label: SQLite
         value: sqlite
+      - label: PostgreSQL
+        value: postgresql
 
     # DuckDB settings
     - name: duckdb.path
