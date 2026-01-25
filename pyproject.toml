@@ -2,6 +2,7 @@
 name = "target-adbc"
 version = "0.1.0"
 description = "Singer target for loading data into ADBC-compatible databases"
+licence = "Apache-2.0"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -30,17 +31,27 @@ dev = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.pytest]
+addopts = ["-ra", "--strict-config", "--strict-markers"]
+filterwarnings = ["error"]
+log_level = "INFO"
+minversion = "9"
+testpaths = ["tests"]
+xfail_strict = true
+
 [tool.ruff]
 line-length = 100
 
 [tool.ruff.lint]
 extend-select = [
     "S",    # https://docs.astral.sh/ruff/rules/#flake8-bandit-s
+    "B",    # https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
     "RSE",  # https://docs.astral.sh/ruff/rules/#flake8-raise-rse
     "RET",  # https://docs.astral.sh/ruff/rules/#flake8-return-ret
     "SLF",  # https://docs.astral.sh/ruff/rules/#flake8-self-slf
     "SIM",  # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
     "TC",   # https://docs.astral.sh/ruff/rules/#flake8-type-checking-tc
+    "I",    # https://docs.astral.sh/ruff/rules/#isort-i
     "UP",   # https://docs.astral.sh/ruff/rules/#pyupgrade-up
     "FURB", # https://docs.astral.sh/ruff/rules/#refurb-furb
     "RUF",  # https://docs.astral.sh/ruff/rules/#ruff-specific-rules-ruf
@@ -53,7 +64,10 @@ extend-select = [
 ]
 
 [tool.mypy]
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_return_any = true
 check_untyped_defs = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+strict = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_ignores = true

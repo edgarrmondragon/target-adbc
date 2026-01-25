@@ -1,11 +1,12 @@
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 
 @pytest.fixture
-def duckdb_config(tmp_path: Path) -> dict:
+def duckdb_config(tmp_path: Path) -> dict[str, Any]:
     """Create a DuckDB configuration for testing."""
     db_path = tmp_path / "test.duckdb"
     return {

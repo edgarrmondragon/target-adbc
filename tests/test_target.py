@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 import pytest
 from singer_sdk.testing import get_target_test_class
@@ -21,31 +21,37 @@ StandardTargetTests = get_target_test_class(
     },
 )
 
+Config: TypeAlias = dict[str, Any]
+
 
 class TestTargetStandard(StandardTargetTests):  # type: ignore[misc,valid-type]
     """Standard Target Tests."""
 
 
-def test_target_initialization(duckdb_config: dict):
+def test_target_initialization(duckdb_config: Config) -> None:
     """Test that the target can be initialized."""
     target = TargetADBC(config=duckdb_config)
     assert target.name == "target-adbc"
     assert target.config["driver"] == "duckdb"
 
 
-def test_sink_class_configured(duckdb_config: dict):
+def test_sink_class_configured(duckdb_config: Config) -> None:
     """Test that the sink class is properly configured."""
     target = TargetADBC(config=duckdb_config)
     assert target.default_sink_class.max_size == 100
 
 
-def test_parallelism_disabled():
+def test_parallelism_disabled() -> None:
     """Test that parallel processing is disabled by default."""
     target = TargetADBC(config={"driver": "duckdb"})
     assert target.max_parallelism == 1
 
 
-def test_append_mode(duckdb_config: dict, singer_messages: list[str], tmp_path: Path):
+def test_append_mode(
+    duckdb_config: Config,
+    singer_messages: list[str],
+    tmp_path: Path,
+) -> None:
     """Test that append mode adds to existing tables."""
     duckdb = pytest.importorskip("duckdb")
 
@@ -76,7 +82,11 @@ def test_append_mode(duckdb_config: dict, singer_messages: list[str], tmp_path: 
     conn.close()
 
 
-def test_replace_mode(duckdb_config: dict, singer_messages: list[str], tmp_path: Path):
+def test_replace_mode(
+    duckdb_config: Config,
+    singer_messages: list[str],
+    tmp_path: Path,
+) -> None:
     """Test that replace mode drops and recreates tables."""
     duckdb = pytest.importorskip("duckdb")
 
@@ -109,7 +119,11 @@ def test_replace_mode(duckdb_config: dict, singer_messages: list[str], tmp_path:
     conn.close()
 
 
-def test_fail_mode(duckdb_config: dict, singer_messages: list[str], tmp_path: Path):
+def test_fail_mode(
+    duckdb_config: Config,
+    singer_messages: list[str],
+    tmp_path: Path,
+) -> None:
     """Test that fail mode raises an error when table exists."""
     input_file = tmp_path / "input.jsonl"
     input_file.write_text("\n".join(singer_messages))
@@ -128,10 +142,9 @@ def test_fail_mode(duckdb_config: dict, singer_messages: list[str], tmp_path: Pa
         target.listen(f)
 
 
-def test_config_schema():
+def test_config_schema() -> None:
     """Test that config schema is properly defined."""
-    target = TargetADBC(config={"driver": "duckdb"}, validate_config=False)
-    schema = target.config_jsonschema
+    schema = TargetADBC.config_jsonschema
 
     # Check required fields
     assert "driver" in schema["properties"]

@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import pyarrow as pa
 from adbc_driver_manager import dbapi
 from singer_sdk.sinks import BatchSink
+
+if TYPE_CHECKING:
+    from singer_sdk.helpers.types import Record
 
 
 class ADBCSink(BatchSink):
@@ -15,14 +18,19 @@ class ADBCSink(BatchSink):
 
     max_size = 10000
 
-    def __init__(self, *args, **kwargs):
+    MODE_APPEND = "append"
+    MODE_CREATE = "create"
+    MODE_REPLACE = "replace"
+    MODE_CREATE_APPEND = "create_append"
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the ADBC sink."""
         super().__init__(*args, **kwargs)
         self._connection: dbapi.Connection | None = None
         self._table_exists: dict[str, bool] = {}
 
     @property
-    def connection(self):
+    def connection(self) -> dbapi.Connection:
         """Get or create ADBC connection."""
         if self._connection is None:
             driver = self.config["driver"]
@@ -88,7 +96,7 @@ class ADBCSink(BatchSink):
 
         return type_mapping.get(json_type_str, pa.string())
 
-    def _create_arrow_schema(self, schema: dict) -> pa.Schema:
+    def _create_arrow_schema(self, schema: dict[str, Any]) -> pa.Schema:
         """Create PyArrow schema from records and Singer schema."""
         fields = []
 
@@ -99,7 +107,7 @@ class ADBCSink(BatchSink):
 
         return pa.schema(fields)
 
-    def _prepare_record(self, record: dict) -> dict:
+    def _prepare_record(self, record: Record) -> Record:
         """Prepare a record for insertion, adding metadata if configured."""
         prepared = record.copy()
 
@@ -149,7 +157,7 @@ class ADBCSink(BatchSink):
 
         return value
 
-    def _records_to_arrow_table(self, records: list[dict]) -> pa.Table:
+    def _records_to_arrow_table(self, records: list[Record]) -> pa.Table:
         """Convert records to PyArrow table."""
         if not records:
             raise ValueError("Cannot create table from empty records list")
@@ -202,7 +210,7 @@ class ADBCSink(BatchSink):
         except Exception:
             self.logger.warning("Error dropping table %s", full_table_name)
 
-    def process_batch(self, context: dict) -> None:
+    def process_batch(self, context: dict[str, Any]) -> None:
         """Process a batch of records.
 
         Args:
@@ -244,6 +252,8 @@ class ADBCSink(BatchSink):
                     full_table_name,
                 )
             # For 'append' mode, we'll just append to the existing table
+
+        mode: Literal["append", "create"]
 
         # Determine ingest mode
         if table_exists_in_db:

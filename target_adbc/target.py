@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from singer_sdk import typing as th
 from singer_sdk.target_base import Target
 
@@ -119,7 +121,7 @@ class TargetADBC(Target):
 
     def __init__(
         self,
-        config: dict | None = None,
+        config: dict[str, Any] | None = None,
         parse_env_config: bool = False,
         validate_config: bool = True,
     ) -> None:

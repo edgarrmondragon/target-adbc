@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -6,10 +7,10 @@ from target_adbc.target import TargetADBC
 
 
 def test_end_to_end_duckdb(
-    duckdb_config: dict,
+    duckdb_config: dict[str, Any],
     singer_messages: list[str],
     tmp_path: Path,
-):
+) -> None:
     """Test end-to-end data loading with DuckDB."""
     duckdb = pytest.importorskip("duckdb")
 

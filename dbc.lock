@@ -2,6 +2,12 @@
 version = 1
 
 [[drivers]]
+name = 'duckdb'
+version = '1.4.3'
+platform = 'macos_arm64'
+checksum = 'e22548be6012078788cf5fd845835323c43d3e96c6ed55a45ae96a942b964acd'
+
+[[drivers]]
 name = 'postgresql'
 version = '1.10.0'
 platform = 'macos_arm64'
@@ -12,9 +18,3 @@ name = 'sqlite'
 version = '1.10.0'
 platform = 'macos_arm64'
 checksum = '1874c534b076f3e24eec427d9192796e098edb2915dc79204137b7ebb732e804'
-
-[[drivers]]
-name = 'duckdb'
-version = '1.4.3'
-platform = 'macos_arm64'
-checksum = 'e22548be6012078788cf5fd845835323c43d3e96c6ed55a45ae96a942b964acd'
