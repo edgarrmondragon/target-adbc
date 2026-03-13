@@ -1215,7 +1215,6 @@ wheels = [
 
 [[package]]
 name = "target-adbc"
-version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "adbc-driver-manager" },
