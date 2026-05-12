@@ -24,7 +24,7 @@ StandardTargetTests = get_target_test_class(
 Config: TypeAlias = dict[str, Any]
 
 
-class TestTargetStandard(StandardTargetTests):  # type: ignore[misc,valid-type]
+class TestTargetStandard(StandardTargetTests):  # type: ignore[misc,valid-type] # ty: ignore[unsupported-base]
     """Standard Target Tests."""
 
 
