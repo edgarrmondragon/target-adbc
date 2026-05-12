@@ -48,6 +48,8 @@ line-length = 100
 
 [tool.ruff.lint]
 extend-select = [
+    "ERA",  # https://docs.astral.sh/ruff/rules/#eradicate-era
+    "ANN",  # https://docs.astral.sh/ruff/rules/#flake8-annotations-ann
     "S",    # https://docs.astral.sh/ruff/rules/#flake8-bandit-s
     "B",    # https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
     "RSE",  # https://docs.astral.sh/ruff/rules/#flake8-raise-rse
@@ -55,7 +57,10 @@ extend-select = [
     "SLF",  # https://docs.astral.sh/ruff/rules/#flake8-self-slf
     "SIM",  # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
     "TC",   # https://docs.astral.sh/ruff/rules/#flake8-type-checking-tc
+    "FLY",  # https://docs.astral.sh/ruff/rules/#flynt-fly
     "I",    # https://docs.astral.sh/ruff/rules/#isort-i
+    "C90",  # https://docs.astral.sh/ruff/rules/#mccabe-c90
+    "PERF", # https://docs.astral.sh/ruff/rules/#perflint-perf
     "UP",   # https://docs.astral.sh/ruff/rules/#pyupgrade-up
     "FURB", # https://docs.astral.sh/ruff/rules/#refurb-furb
     "RUF",  # https://docs.astral.sh/ruff/rules/#ruff-specific-rules-ruf
@@ -75,6 +80,3 @@ warn_redundant_casts = true
 warn_return_any = true
 warn_unreachable = true
 warn_unused_ignores = true
-
-[tool.uv]
-no-build-package = ["jsonpath-ng"]

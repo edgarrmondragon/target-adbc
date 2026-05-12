@@ -10,6 +10,9 @@ from adbc_driver_manager import dbapi
 from singer_sdk.sinks import BatchSink
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from singer_sdk import Target
     from singer_sdk.helpers.types import Record
 
 
@@ -23,9 +26,15 @@ class ADBCSink(BatchSink):
     MODE_REPLACE = "replace"
     MODE_CREATE_APPEND = "create_append"
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        target: Target,
+        stream_name: str,
+        schema: dict[str, Any],
+        key_properties: Sequence[str] | None,
+    ) -> None:
         """Initialize the ADBC sink."""
-        super().__init__(*args, **kwargs)
+        super().__init__(target, stream_name, schema, key_properties)
         self._connection: dbapi.Connection | None = None
         self._table_exists: dict[str, bool] = {}
 
@@ -121,7 +130,7 @@ class ADBCSink(BatchSink):
 
         return prepared
 
-    def _convert_value(self, value: Any, arrow_type: pa.DataType) -> Any:
+    def _convert_value(self, value: Any, arrow_type: pa.DataType) -> Any:  # noqa: ANN401
         """Convert Python value to appropriate type for PyArrow."""
         if value is None:
             return None
@@ -129,12 +138,7 @@ class ADBCSink(BatchSink):
         # Handle datetime conversions
         if pa.types.is_timestamp(arrow_type):
             if isinstance(value, str):
-                # Parse ISO 8601 datetime strings
-                dt = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
-                # Ensure timezone aware
-                if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=datetime.timezone.utc)
-                return dt
+                value = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
             if isinstance(value, datetime.datetime):
                 # Ensure timezone aware
                 if value.tzinfo is None:
