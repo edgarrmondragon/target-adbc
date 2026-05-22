@@ -6,7 +6,7 @@ licence = "Apache-2.0"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "singer-sdk~=0.54.0a13",
+    "singer-sdk~=0.54.2",
     "adbc-driver-manager>=1.9.0",
     "pyarrow>=22.0.0",
     "duckdb>=1.4.1",
