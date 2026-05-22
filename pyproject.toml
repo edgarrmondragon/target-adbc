@@ -36,12 +36,12 @@ fallback-version = "0.1.0dev0"
 source = "vcs"
 
 [tool.pytest]
-addopts = ["-v", "-ra", "--strict-config", "--strict-markers"]
+addopts = ["-v", "-ra"]
 filterwarnings = ["error"]
 log_level = "INFO"
 minversion = "9"
+strict = true
 testpaths = ["tests"]
-xfail_strict = true
 
 [tool.ruff]
 line-length = 100
