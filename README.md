@@ -86,7 +86,7 @@ Create a `config.json` file with your database connection details:
   "duckdb": {
     "path": "my_database.duckdb"
   },
-  "batch_size": 10000,
+  "batch_size_rows": 10000,
   "overwrite_behavior": "append"
 }
 ```
@@ -99,7 +99,7 @@ Create a `config.json` file with your database connection details:
   "sqlite": {
     "uri": "my_database.sqlite"
   },
-  "batch_size": 5000
+  "batch_size_rows": 5000
 }
 ```
 
@@ -112,7 +112,7 @@ Create a `config.json` file with your database connection details:
     "uri": "postgresql://myuser:mypass@localhost:5432/mydb"
   },
   "default_target_schema": "public",
-  "batch_size": 10000
+  "batch_size_rows": 10000
 }
 ```
 
@@ -372,7 +372,7 @@ This target implements the Singer specification:
 
 ## Performance Tips
 
-1. **Batch Size**: Increase `batch_size` for larger datasets (e.g., 50000-100000 rows)
+1. **Batch Size**: Increase `batch_size_rows` for larger datasets (e.g., 50000-100000 rows)
 2. **Metadata**: Disable `add_record_metadata` if you don't need lineage tracking
 3. **Schema**: Specify schema explicitly to avoid inference overhead
 4. **Indexes**: Create indexes after loading large datasets, not before

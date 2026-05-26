@@ -1,7 +1,7 @@
 {
   "driver": "duckdb",
   "uri": "./my_database.duckdb",
-  "batch_size": 10000,
+  "batch_size_rows": 10000,
   "overwrite_behavior": "append",
   "add_record_metadata": true
 }

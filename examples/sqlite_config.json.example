@@ -1,7 +1,7 @@
 {
   "driver": "sqlite",
   "uri": "./my_database.sqlite",
-  "batch_size": 5000,
+  "batch_size_rows": 5000,
   "overwrite_behavior": "append",
   "add_record_metadata": true
 }

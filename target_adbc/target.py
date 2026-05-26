@@ -15,16 +15,12 @@ class TargetADBC(Target):
 
     name = "target-adbc"
 
-    # Disable parallel processing to avoid database lock contention
-    # This is especially important for single-writer databases like DuckDB and SQLite
-    max_parallelism = 1
-
     config_jsonschema = th.PropertiesList(
         th.Property(
             "driver",
             th.StringType,
             required=True,
-            description="ADBC driver name. Examples: 'duckdb', 'sqlite', 'postgresql'",
+            description="ADBC driver name. Examples: 'duckdb', 'sqlite', 'postgresql', 'mssql'.",
         ),
         th.Property(
             "duckdb",
@@ -86,18 +82,17 @@ class TargetADBC(Target):
             "overwrite_behavior",
             th.StringType,
             default="append",
-            allowed_values=["append", "replace", "fail"],
+            allowed_values=["append", "replace"],
             description=(
-                "Behavior when table already exists:\n"
-                "- 'append': Add new data to existing table\n"
-                "- 'replace': Drop and recreate table\n"
-                "- 'fail': Raise an error if table exists"
+                "Behavior when the target table already exists:\n"
+                "- 'append': Add new data to the existing table (default)\n"
+                "- 'replace': Drop and recreate the table before loading"
             ),
         ),
         th.Property(
-            "batch_size",
+            "batch_size_rows",
             th.IntegerType,
-            default=10000,
+            default=25_000,
             description="Maximum number of rows to process in a single batch.",
         ),
         th.Property(
@@ -138,9 +133,12 @@ class TargetADBC(Target):
             validate_config=validate_config,
         )
 
-        # Set max batch size from config
-        if self.config.get("batch_size"):
-            self.default_sink_class.max_size = self.config["batch_size"]
+        if self.config["driver"] in ["duckdb", "sqlite"]:
+            self.logger.info(
+                "Driver '%s' detected. Setting max_parallelism to 1 to avoid database locks.",
+                self.config["driver"],
+            )
+            self._max_parallelism = 1
 
 
 if __name__ == "__main__":

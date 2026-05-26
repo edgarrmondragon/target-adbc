@@ -65,7 +65,7 @@ plugins:
       description: Suffix to add to all table names
 
     # Batch size
-    - name: batch_size
+    - name: batch_size_rows
       kind: integer
       description: Maximum number of rows to process in a single batch
 
