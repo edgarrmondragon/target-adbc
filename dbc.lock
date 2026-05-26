@@ -3,9 +3,9 @@ version = 1
 
 [[drivers]]
 name = 'duckdb'
-version = '1.5.2'
+version = '1.5.3'
 platform = 'macos_arm64'
-checksum = 'dd52518af961ec04113d08cbb8b1695eb5f97244ef5a54fbe93bce6bfc9df00f'
+checksum = '2de60b6210a6bc9a1405dabd1e26d8ea8ce8c0d03d992ceba0f4f61ccbe031a5'
 
 [[drivers]]
 name = 'postgresql'
