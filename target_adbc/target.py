@@ -6,7 +6,6 @@ import sys
 from typing import TYPE_CHECKING, Any
 
 from adbc_driver_manager import dbapi
-from singer_sdk import Sink
 from singer_sdk import typing as th
 from singer_sdk.target_base import Target
 
@@ -193,13 +192,19 @@ class TargetADBC(Target):
             self._connection = dbapi.connect(driver=driver, db_kwargs=db_kwargs)
         return self._connection
 
-    def process_endofpipe(self) -> None:
-        """Close the shared ADBC connection after all sinks finish."""
-        super().process_endofpipe()
+    def _close_connection(self) -> None:
         if self._connection is not None:
             self.logger.info("Closing ADBC connection")
             self._connection.close()
             self._connection = None
+
+    def process_endofpipe(self) -> None:
+        """Close the shared ADBC connection after all sinks finish."""
+        super().process_endofpipe()
+        self._close_connection()
+
+    def __del__(self) -> None:
+        self._close_connection()
 
 
 if __name__ == "__main__":
