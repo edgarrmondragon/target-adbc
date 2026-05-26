@@ -53,10 +53,24 @@ class TargetADBC(Target):
                     "uri",
                     th.StringType,
                     required=True,
+                    secret=True,
                     description="URI to the PostgreSQL database.",
                 ),
             ),
             description="PostgreSQL configuration.",
+        ),
+        th.Property(
+            "mssql",
+            th.ObjectType(
+                th.Property(
+                    "uri",
+                    th.StringType,
+                    required=True,
+                    secret=True,
+                    description="Microsoft SQL Server URI",
+                ),
+            ),
+            description="Microsoft SQL Server configuration",
         ),
         th.Property(
             "default_target_schema",

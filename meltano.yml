@@ -18,6 +18,8 @@ plugins:
     namespace: target_adbc
     pip_url: -e .
     executable: target-adbc
+    capabilities:
+    - structured-logging
     settings:
     - name: driver
       kind: options
@@ -44,6 +46,12 @@ plugins:
 
     # PostgreSQL settings
     - name: postgresql.uri
+      kind: string
+      description: URI to the PostgreSQL database
+      placeholder: Ex. postgresql://postgres:password@localhost:5432/database
+      sensitive: true
+
+    - name: mssql.uri
       kind: string
       description: URI to the PostgreSQL database
       placeholder: Ex. postgresql://postgres:password@localhost:5432/database
@@ -78,8 +86,6 @@ plugins:
         value: append
       - label: Replace
         value: replace
-      - label: Fail
-        value: fail
 
     # Add record metadata
     - name: add_record_metadata
