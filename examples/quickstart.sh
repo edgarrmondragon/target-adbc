@@ -26,7 +26,7 @@ cat > "$CONFIG_FILE" << EOF
 {
   "driver": "duckdb",
   "uri": "examples/test_database.duckdb",
-  "batch_size": 1000,
+  "batch_size_rows": 1000,
   "add_record_metadata": false
 }
 EOF

@@ -3,7 +3,7 @@
   "duckdb": {
     "path": "fedidb.duckdb"
   },
-  "batch_size": 1000,
+  "batch_size_rows": 1000,
   "add_record_metadata": false,
   "overwrite_behavior": "fail"
 }

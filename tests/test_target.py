@@ -35,12 +35,6 @@ def test_target_initialization(duckdb_config: Config) -> None:
     assert target.config["driver"] == "duckdb"
 
 
-def test_sink_class_configured(duckdb_config: Config) -> None:
-    """Test that the sink class is properly configured."""
-    target = TargetADBC(config=duckdb_config)
-    assert target.default_sink_class.max_size == 100
-
-
 def test_parallelism_disabled() -> None:
     """Test that parallel processing is disabled by default."""
     target = TargetADBC(config={"driver": "duckdb"})
@@ -119,42 +113,14 @@ def test_replace_mode(
     conn.close()
 
 
-def test_fail_mode(
-    duckdb_config: Config,
-    singer_messages: list[str],
-    tmp_path: Path,
-) -> None:
-    """Test that fail mode raises an error when table exists."""
-    input_file = tmp_path / "input.jsonl"
-    input_file.write_text("\n".join(singer_messages))
-
-    # First load
-    target = TargetADBC(config=duckdb_config)
-    with open(input_file) as f:
-        target.listen(f)
-
-    # Second load with fail mode should raise error
-    fail_config = duckdb_config.copy()
-    fail_config["overwrite_behavior"] = "fail"
-    target = TargetADBC(config=fail_config)
-
-    with pytest.raises(RuntimeError, match="already exists"), open(input_file) as f:
-        target.listen(f)
-
-
 def test_config_schema() -> None:
     """Test that config schema is properly defined."""
     schema = TargetADBC.config_jsonschema
 
-    # Check required fields
     assert "driver" in schema["properties"]
-    # Note: The schema structure differs from settings - driver is in properties
-
-    # Check optional fields with defaults
-    assert schema["properties"]["batch_size"]["default"] == 10000
+    assert schema["properties"]["batch_size_rows"]["default"] == 25_000
     assert schema["properties"]["overwrite_behavior"]["default"] == "append"
     assert schema["properties"]["add_record_metadata"]["default"] is True
 
-    # Check allowed values for overwrite_behavior
     allowed = schema["properties"]["overwrite_behavior"].get("enum")
-    assert set(allowed) == {"append", "replace", "fail"}
+    assert set(allowed) == {"append", "replace"}

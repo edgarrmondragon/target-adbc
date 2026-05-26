@@ -2,6 +2,8 @@
 [drivers]
 [drivers.duckdb]
 
+[drivers.mssql]
+
 [drivers.postgresql]
 
 [drivers.sqlite]

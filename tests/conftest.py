@@ -14,7 +14,7 @@ def duckdb_config(tmp_path: Path) -> dict[str, Any]:
         "duckdb": {
             "path": str(db_path),
         },
-        "batch_size": 100,
+        "batch_size_rows": 100,
         "add_record_metadata": False,
     }
 
