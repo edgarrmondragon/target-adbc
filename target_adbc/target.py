@@ -2,12 +2,23 @@
 
 from __future__ import annotations
 
-from typing import Any
+import sys
+from typing import TYPE_CHECKING, Any
 
+from adbc_driver_manager import dbapi
+from singer_sdk import Sink
 from singer_sdk import typing as th
 from singer_sdk.target_base import Target
 
 from target_adbc.sinks import ADBCSink
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class TargetADBC(Target):
@@ -147,12 +158,48 @@ class TargetADBC(Target):
             validate_config=validate_config,
         )
 
+        self._connection: dbapi.Connection | None = None
+
         if self.config["driver"] in ["duckdb", "sqlite"]:
             self.logger.info(
                 "Driver '%s' detected. Setting max_parallelism to 1 to avoid database locks.",
                 self.config["driver"],
             )
             self._max_parallelism = 1
+
+    @override
+    def create_sink(
+        self,
+        *,
+        stream_name: str,
+        schema: dict,
+        key_properties: Sequence[str] | None = None,
+    ) -> ADBCSink:
+        return ADBCSink(
+            target=self,
+            stream_name=stream_name,
+            schema=schema,
+            key_properties=key_properties,
+            connection=self.connection,
+        )
+
+    @property
+    def connection(self) -> dbapi.Connection:
+        """Get or create the shared ADBC connection."""
+        if self._connection is None:
+            driver = self.config["driver"]
+            self.logger.info("Connecting to database using driver: %s", driver)
+            db_kwargs = self.config.get(driver, {})
+            self._connection = dbapi.connect(driver=driver, db_kwargs=db_kwargs)
+        return self._connection
+
+    def process_endofpipe(self) -> None:
+        """Close the shared ADBC connection after all sinks finish."""
+        super().process_endofpipe()
+        if self._connection is not None:
+            self.logger.info("Closing ADBC connection")
+            self._connection.close()
+            self._connection = None
 
 
 if __name__ == "__main__":
