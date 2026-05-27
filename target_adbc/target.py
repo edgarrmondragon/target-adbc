@@ -171,7 +171,7 @@ class TargetADBC(Target):
         self,
         *,
         stream_name: str,
-        schema: dict,
+        schema: dict[str, Any],
         key_properties: Sequence[str] | None = None,
     ) -> ADBCSink:
         return ADBCSink(
