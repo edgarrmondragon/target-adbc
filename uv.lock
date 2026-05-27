@@ -1307,8 +1307,8 @@ wheels = [
 
 [[package]]
 name = "singer-sdk"
-version = "0.54.2"
-source = { registry = "https://pypi.org/simple" }
+version = "0.54.3.dev14+g08bb1c26e"
+source = { git = "https://github.com/meltano/sdk.git?rev=feat%2Ftarget-create-sink#08bb1c26e1e35646c4bc3be57bc2a565664c6ca0" }
 dependencies = [
     { name = "backports-datetime-fromisoformat", marker = "python_full_version < '3.11'" },
     { name = "click" },
@@ -1330,10 +1330,6 @@ dependencies = [
     { name = "typing-extensions", marker = "python_full_version < '3.13'" },
     { name = "universal-pathlib" },
     { name = "urllib3" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/16/aa/8329a0fa100fbf275df41f9ee091603b8b17e5738c15dba053980de2251c/singer_sdk-0.54.2.tar.gz", hash = "sha256:f00e9244633491a2486846e43cf02ce322c5d56e1cc3e19b251e6fc1d6e4370c", size = 1380633, upload-time = "2026-05-18T14:58:28.423Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b7/f9/2074fe5a9e3173e3089066d3e2d517c5cbc51fcf8ea2e91dc47b16006794/singer_sdk-0.54.2-py3-none-any.whl", hash = "sha256:298604ca3ae7088a299dee6677d6707e9ba231c523552c6f2a0cf654119a02d1", size = 217437, upload-time = "2026-05-18T14:58:26.807Z" },
 ]
 
 [[package]]
@@ -1417,7 +1413,7 @@ dev = [
 requires-dist = [
     { name = "adbc-driver-manager", specifier = "~=1.11.0" },
     { name = "pyarrow", specifier = "~=24.0" },
-    { name = "singer-sdk", specifier = "~=0.54.2" },
+    { name = "singer-sdk", git = "https://github.com/meltano/sdk.git?rev=feat%2Ftarget-create-sink" },
     { name = "typing-extensions", marker = "python_full_version < '3.12'", specifier = ">=4.15.0" },
 ]
 

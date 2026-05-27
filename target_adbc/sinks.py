@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from adbc_driver_manager import dbapi
 from singer_sdk.sinks import BatchSink
 
 from target_adbc.batch import BatchProcessor
@@ -12,6 +11,7 @@ from target_adbc.batch import BatchProcessor
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from adbc_driver_manager import dbapi
     from singer_sdk import Target
     from singer_sdk.helpers.types import Record
 
@@ -19,29 +19,19 @@ if TYPE_CHECKING:
 class ADBCSink(BatchSink):
     """ADBC sink class."""
 
-    max_size = 10000
-
     def __init__(
         self,
         target: Target,
         stream_name: str,
         schema: dict[str, Any],
         key_properties: Sequence[str] | None,
+        *,
+        connection: dbapi.Connection,
     ) -> None:
         """Initialize the ADBC sink."""
         super().__init__(target, stream_name, schema, key_properties)
-        self._connection: dbapi.Connection | None = None
+        self.connection = connection
         self._processor: BatchProcessor | None = None
-
-    @property
-    def connection(self) -> dbapi.Connection:
-        """Get or create ADBC connection."""
-        if self._connection is None:
-            driver = self.config["driver"]
-            self.logger.info("Connecting to database using driver: %s", driver)
-            db_kwargs = self.config.get(driver, {})
-            self._connection = dbapi.connect(driver=driver, db_kwargs=db_kwargs)
-        return self._connection
 
     def _get_table_name(self) -> str:
         """Get the target table name with prefix/suffix applied."""
@@ -80,15 +70,9 @@ class ADBCSink(BatchSink):
         try:
             self.processor.ingest(records)
         except Exception:
-            # The Singer SDK does not call clean_up() when process_batch raises,
-            # so we close the connection here to avoid leaking resources.
             self.clean_up()
             raise
 
     def clean_up(self) -> None:
         """Clean up resources."""
-        self._processor = None  # drop the extra Connection reference held by the processor
-        if self._connection is not None:
-            self.logger.info("Closing ADBC connection")
-            self._connection.close()
-            self._connection = None
+        self._processor = None

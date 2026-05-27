@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypeAlias
 
+import adbc_driver_manager
 import pytest
-from singer_sdk.testing import get_target_test_class
+from singer_sdk.testing import SuiteConfig, TargetTestRunner, get_target_test_class
 
 from target_adbc.target import TargetADBC
 
@@ -26,6 +27,19 @@ Config: TypeAlias = dict[str, Any]
 
 class TestTargetStandard(StandardTargetTests):  # type: ignore[misc,valid-type] # ty: ignore[unsupported-base]
     """Standard Target Tests."""
+
+    @pytest.mark.xfail(
+        reason="Schema evolution is not supported",
+        raises=adbc_driver_manager.InternalError,
+        strict=True,
+    )
+    def test_target_schema_updates(
+        self,
+        config: SuiteConfig,
+        resource: Any,
+        runner: TargetTestRunner,
+    ) -> None:
+        super().test_target_schema_updates(config, resource, runner)
 
 
 def test_target_initialization(duckdb_config: Config) -> None:
