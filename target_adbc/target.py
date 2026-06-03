@@ -198,6 +198,7 @@ class TargetADBC(Target):
             self._connection.close()
             self._connection = None
 
+    @override
     def process_endofpipe(self) -> None:
         """Close the shared ADBC connection after all sinks finish."""
         super().process_endofpipe()

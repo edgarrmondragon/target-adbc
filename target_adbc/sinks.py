@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, Any
 
 from singer_sdk.sinks import BatchSink
 
 from target_adbc.batch import BatchProcessor
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -60,6 +66,7 @@ class ADBCSink(BatchSink):
             )
         return self._processor
 
+    @override
     def process_batch(self, context: dict[str, Any]) -> None:
         """Process a batch of records.
 
@@ -73,6 +80,7 @@ class ADBCSink(BatchSink):
             self.clean_up()
             raise
 
+    @override
     def clean_up(self) -> None:
         """Clean up resources."""
         self._processor = None
