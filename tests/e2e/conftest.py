@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 from adbc_driver_manager import ProgrammingError, dbapi
-from testcontainers.mssql import SqlServerContainer
-from testcontainers.postgres import PostgresContainer
+from testcontainers.community.mssql import SqlServerContainer
+from testcontainers.community.postgres import PostgresContainer
 
 if TYPE_CHECKING:
     from collections.abc import Generator

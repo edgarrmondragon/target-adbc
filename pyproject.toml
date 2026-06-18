@@ -34,7 +34,7 @@ dev = [
   "pyarrow-stubs>=20.0.0.20251107",
   "pytest>=9",
   "ruff>=0.14",
-  "testcontainers[mssql,postgres]>=4.15.0rc3",
+  "testcontainers[mssql,postgres]>=4.15.0rc4",
   "ty>=0.0.1a25",
 ]
 
