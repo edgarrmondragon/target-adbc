@@ -20,7 +20,7 @@ dynamic = [ "version" ]
 dependencies = [
   "adbc-driver-manager~=1.11.0",
   "pyarrow~=24.0",
-  "singer-sdk~=0.54.2",
+  "singer-sdk~=0.55.0a1",
   "typing-extensions>=4.15; python_full_version<'3.12'",
 ]
 [project.scripts]
