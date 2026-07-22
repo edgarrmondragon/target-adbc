@@ -22,11 +22,11 @@ def test_end_to_end_duckdb(
     target = TargetADBC(config=duckdb_config)
 
     # Process messages
-    with open(input_file) as f:
+    with input_file.open() as f:
         target.listen(f)
 
     # Verify data was loaded
-    db_path = duckdb_config["duckdb"]["path"]
+    db_path = duckdb_config["uri"].removeprefix("duckdb://")
     conn = duckdb.connect(db_path)
 
     # Check record count

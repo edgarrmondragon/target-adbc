@@ -1,9 +1,13 @@
 # dbc driver list
 [drivers]
 [drivers.duckdb]
+version = '>=1.5.5'
 
 [drivers.mssql]
+version = '>=1.5.0'
 
 [drivers.postgresql]
+version = '>=1.11.0'
 
 [drivers.sqlite]
+version = '>=1.11.0'

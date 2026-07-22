@@ -1,12 +1,5 @@
 {
-  "driver": "postgresql",
-  "connection_kwargs": {
-    "username": "postgres",
-    "password": "your_password",
-    "host": "localhost",
-    "port": 5432,
-    "db_name": "your_database"
-  },
+  "uri": "postgresql://username:your_password@localhost:5432/your_database",
   "default_target_schema": "public",
   "batch_size_rows": 10000,
   "overwrite_behavior": "append",

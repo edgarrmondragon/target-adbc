@@ -22,7 +22,7 @@ class BatchProcessor:
     without going through the full target pipeline.
     """
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # ruff:ignore[too-many-arguments]
         self,
         connection: dbapi.Connection,
         table_name: str,
@@ -108,7 +108,7 @@ class BatchProcessor:
             prepared["_sdc_table_version"] = record.get("_sdc_table_version", 0)
         return prepared
 
-    def _convert_value(self, value: Any, arrow_type: pa.DataType) -> Any:  # noqa: ANN401, PLR0911
+    def _convert_value(self, value: Any, arrow_type: pa.DataType) -> Any:  # ruff:ignore[any-type, no-self-use, too-many-return-statements]
         """Coerce a Python value to the appropriate type for PyArrow."""
         if value is None:
             return None

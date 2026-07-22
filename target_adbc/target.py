@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import importlib.util
+import pathlib
 import sys
-from typing import TYPE_CHECKING, Any
+import urllib.parse
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from adbc_driver_manager import dbapi
 from singer_sdk import typing as th
@@ -17,7 +20,33 @@ else:
     from typing_extensions import override
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
+    from pathlib import Path
+
+
+class ConnectKwargs(TypedDict, total=False):
+    driver: str | Path | None
+    uri: str
+    entrypoint: str
+    db_kwargs: Mapping[str, str | Path]
+
+
+def _bundled_driver_path(package: str) -> str | None:
+    """Return the path to a driver shared library bundled with `package`, if installed.
+
+    Packages like ``adbc-driver-sqlite`` and ``adbc-driver-postgresql`` bundle a
+    prebuilt ``lib<package>.so`` next to their ``__init__.py``, regardless of platform.
+    Using this path directly avoids depending on an ADBC driver manifest being
+    installed separately on the host (e.g. via the `dbc` CLI), which can drift out of
+    sync with what's actually pinned in the project's dependencies.
+    """
+    spec = importlib.util.find_spec(package)
+    if spec is None or not spec.submodule_search_locations:
+        return None
+
+    package_dir = pathlib.Path(next(iter(spec.submodule_search_locations)))
+    driver_path = package_dir / f"lib{package}.so"
+    return str(driver_path) if driver_path.is_file() else None
 
 
 class TargetADBC(Target):
@@ -27,59 +56,34 @@ class TargetADBC(Target):
 
     config_jsonschema = th.PropertiesList(
         th.Property(
-            "driver",
+            "uri",
             th.StringType,
             required=True,
-            description="ADBC driver name. Examples: 'duckdb', 'sqlite', 'postgresql', 'mssql'.",
+            secret=True,
+            description="ADBC URI. Examples: 'duckdb://...', 'postgresql://...'",
+            examples=[
+                "duckdb://",
+                "postgresql://",
+            ],
         ),
         th.Property(
             "duckdb",
-            th.ObjectType(
-                th.Property(
-                    "path",
-                    th.StringType,
-                    required=True,
-                    description="Path to the DuckDB database file.",
-                ),
-            ),
+            th.ObjectType(),
             description="DuckDB configuration.",
         ),
         th.Property(
             "sqlite",
-            th.ObjectType(
-                th.Property(
-                    "uri",
-                    th.StringType,
-                    required=True,
-                    description="URI to the SQLite database file.",
-                ),
-            ),
+            th.ObjectType(),
             description="SQLite configuration.",
         ),
         th.Property(
             "postgresql",
-            th.ObjectType(
-                th.Property(
-                    "uri",
-                    th.StringType,
-                    required=True,
-                    secret=True,
-                    description="URI to the PostgreSQL database.",
-                ),
-            ),
+            th.ObjectType(),
             description="PostgreSQL configuration.",
         ),
         th.Property(
             "mssql",
-            th.ObjectType(
-                th.Property(
-                    "uri",
-                    th.StringType,
-                    required=True,
-                    secret=True,
-                    description="Microsoft SQL Server URI",
-                ),
-            ),
+            th.ObjectType(),
             description="Microsoft SQL Server configuration",
         ),
         th.Property(
@@ -158,12 +162,10 @@ class TargetADBC(Target):
         )
 
         self._connection: dbapi.Connection | None = None
+        self._uri: str = self.config["uri"]
 
-        if self.config["driver"] in ["duckdb", "sqlite"]:
-            self.logger.info(
-                "Driver '%s' detected. Setting max_parallelism to 1 to avoid database locks.",
-                self.config["driver"],
-            )
+        if self._uri.startswith(("duckdb://", "sqlite://")):
+            self.logger.info("Setting max_parallelism to 1 to avoid database locks.")
             self._max_parallelism = 1
 
     @override
@@ -182,14 +184,41 @@ class TargetADBC(Target):
             connection=self.connection,
         )
 
+    def get_connect_kwargs(self) -> ConnectKwargs:
+        parsed = urllib.parse.urlparse(self._uri)
+        kwargs: ConnectKwargs = {"db_kwargs": self.config.get(parsed.scheme, {})}
+        if (
+            # Use driver shipped with duckdb Python library if available
+            parsed.scheme == "duckdb"
+            and (duckdb_module_spec := importlib.util.find_spec("_duckdb"))
+        ):
+            kwargs["driver"] = duckdb_module_spec.origin
+            kwargs["uri"] = self._uri
+            kwargs["entrypoint"] = "duckdb_adbc_init"
+        elif parsed.scheme == "sqlite":
+            # Use driver shipped with adbc-driver-sqlite Python library if available
+            kwargs["driver"] = _bundled_driver_path("adbc_driver_sqlite") or "sqlite"
+            # The SQLite driver doesn't understand "sqlite://" URIs, only
+            # raw paths or "file://" URIs.
+            kwargs["uri"] = self._uri.removeprefix("sqlite://")
+        elif (
+            # Use driver shipped with adbc-driver-postgresql Python library if available
+            parsed.scheme == "postgresql"
+            and (pg_driver_path := _bundled_driver_path("adbc_driver_postgresql"))
+        ):
+            kwargs["driver"] = pg_driver_path
+            kwargs["uri"] = self._uri
+        else:
+            kwargs["driver"] = self._uri
+
+        return kwargs
+
     @property
     def connection(self) -> dbapi.Connection:
         """Get or create the shared ADBC connection."""
+        self.logger.info("Connecting to database using URI: %s", self._uri)
         if self._connection is None:
-            driver = self.config["driver"]
-            self.logger.info("Connecting to database using driver: %s", driver)
-            db_kwargs = self.config.get(driver, {})
-            self._connection = dbapi.connect(driver=driver, db_kwargs=db_kwargs)
+            self._connection = dbapi.connect(**self.get_connect_kwargs())
         return self._connection
 
     def _close_connection(self) -> None:

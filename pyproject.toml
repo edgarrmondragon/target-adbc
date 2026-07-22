@@ -19,23 +19,31 @@ classifiers = [
 dynamic = [ "version" ]
 dependencies = [
   "adbc-driver-manager~=1.11.0",
-  "pyarrow~=24.0",
+  "pyarrow~=25.0",
   "singer-sdk~=0.55.0a1",
   "typing-extensions>=4.15; python_full_version<'3.12'",
+]
+optional-dependencies.duckdb = [
+  "duckdb>=1.5.5",
+]
+optional-dependencies.postgres = [
+  "adbc-driver-postgresql~=1.11.0",
+]
+optional-dependencies.sqlite = [
+  "adbc-driver-sqlite~=1.11.0",
 ]
 [project.scripts]
 target-adbc = "target_adbc.target:TargetADBC.cli"
 
 [dependency-groups]
 dev = [
-  "coverage>=7.14",
-  "duckdb>=1.5.3",
-  "mypy>=1.18",
+  "coverage>=7.15",
+  "mypy>=2.3",
   "pyarrow-stubs>=20.0.0.20251107",
-  "pytest>=9",
-  "ruff>=0.14",
+  "pytest>=9.1",
+  "ruff>=0.15.22",
   "testcontainers[mssql,postgres]>=4.15.0rc4",
-  "ty>=0.0.1a25",
+  "ty>=0.0.62",
 ]
 
 [tool.hatch.version]
@@ -47,6 +55,8 @@ singer-sdk = { git = "https://github.com/meltano/sdk.git", rev = "main" }
 
 [tool.ruff]
 line-length = 100
+preview = true
+required-version = ">=0.15.22"
 [tool.ruff.lint]
 extend-select = [
   "ERA",  # https://docs.astral.sh/ruff/rules/#eradicate-era
@@ -69,10 +79,10 @@ extend-select = [
 ]
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**/*.py" = [
-  "ANN401",  # Any is fine for fixture / test parameter types
-  "PLR2004", # Magic value is fine in tests
-  "S101",    # pytest uses assert statements
-  "S608",    # Raw SQL queries are OK in tests
+  "any-type",  # Any is fine for fixture / test parameter types
+  "magic-value-comparison", # Magic value is fine in tests
+  "assert",    # pytest uses assert statements
+  "hardcoded-sql-expression",    # Raw SQL queries are OK in tests
 ]
 
 [tool.mypy]
