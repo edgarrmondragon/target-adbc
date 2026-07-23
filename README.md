@@ -36,8 +36,6 @@ Any database with an ADBC driver is supported. Popular options include:
 | **SQLite** | `sqlite://` | `pip install target-adbc[sqlite]` | `dbc install sqlite` |
 | **PostgreSQL** | `postgresql://` | `pip install target-adbc[postgres]` | `dbc install postgresql` |
 | **MSSQL** | `sqlserver://` | *(no PyPI driver)* | `dbc install mssql` |
-| **Flight SQL** | `flightsql://` | *(no PyPI driver)* | `dbc install flightsql` |
-| **Snowflake** | `snowflake://` | *(no PyPI driver)* | `dbc install snowflake` |
 
 ### Installing ADBC Drivers
 
@@ -50,7 +48,7 @@ There are two ways to make an ADBC driver available to target-adbc:
    # or: pip install "target-adbc[duckdb,sqlite,postgres]"
    ```
 
-2. **[`dbc`](https://docs.columnar.tech/dbc/)**: required for drivers with no official PyPI package (e.g. MSSQL, Flight SQL, Snowflake), and also works for DuckDB/SQLite/PostgreSQL if you'd rather manage drivers outside of your Python environment:
+2. **[`dbc`](https://docs.columnar.tech/dbc/)**: required for drivers with no official PyPI package (e.g. MSSQL), and also works for DuckDB/SQLite/PostgreSQL if you'd rather manage drivers outside of your Python environment:
 
    ```bash
    # Install dbc (one-time setup)
