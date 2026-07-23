@@ -18,7 +18,7 @@ classifiers = [
 ]
 dynamic = [ "version" ]
 dependencies = [
-  "adbc-driver-manager~=1.11.0",
+  "adbc-driver-manager~=1.11",
   "pyarrow~=25.0",
   "singer-sdk~=0.55.0a1",
   "typing-extensions>=4.15; python_full_version<'3.12'",
@@ -27,10 +27,10 @@ optional-dependencies.duckdb = [
   "duckdb>=1.5.5",
 ]
 optional-dependencies.postgres = [
-  "adbc-driver-postgresql~=1.11.0",
+  "adbc-driver-postgresql~=1.11",
 ]
 optional-dependencies.sqlite = [
-  "adbc-driver-sqlite~=1.11.0",
+  "adbc-driver-sqlite~=1.11",
 ]
 [project.scripts]
 target-adbc = "target_adbc.target:TargetADBC.cli"
@@ -52,6 +52,13 @@ source = "vcs"
 
 [tool.uv.sources]
 singer-sdk = { git = "https://github.com/meltano/sdk.git", rev = "main" }
+adbc-driver-manager = { "index" = "arrow-adbc-nightlies" }
+adbc-driver-postgresql = { "index" = "arrow-adbc-nightlies" }
+adbc-driver-sqlite = { "index" = "arrow-adbc-nightlies" }
+
+[[tool.uv.index]]
+name = "arrow-adbc-nightlies"
+url = "https://repo.fury.io/arrow-adbc-nightlies"
 
 [tool.ruff]
 line-length = 100
