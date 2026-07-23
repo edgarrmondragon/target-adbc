@@ -24,8 +24,7 @@ CONFIG_FILE="examples/test_config.json"
 echo "📝 Creating config file: $CONFIG_FILE"
 cat > "$CONFIG_FILE" << EOF
 {
-  "driver": "duckdb",
-  "uri": "examples/test_database.duckdb",
+  "uri": "duckdb://examples/test_database.duckdb",
   "batch_size_rows": 1000,
   "add_record_metadata": false
 }
@@ -50,7 +49,7 @@ echo "📊 Querying results..."
 python3 << EOF
 from adbc_driver_manager import dbapi
 
-with dbapi.connect(driver="duckdb", db_kwargs={"path": "$DB_PATH"}) as conn, conn.cursor() as cursor:
+with dbapi.connect(f"duckdb://{DB_PATH}") as conn, conn.cursor() as cursor:
     print("\n=== Users Table ===")
     cursor.execute("SELECT * FROM users ORDER BY id")
     rows = cursor.fetchall()

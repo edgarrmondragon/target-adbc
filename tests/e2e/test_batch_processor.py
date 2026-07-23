@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import adbc_driver_manager
 import pytest
 
 from target_adbc.batch import BatchProcessor
@@ -97,7 +98,10 @@ def test_empty_batch_is_noop(backend_connection: BackendConnection, table_name: 
     proc = _make_proc(backend_connection, table_name)
     proc.ingest([])
 
-    with pytest.raises(Exception), backend_connection.connection.cursor() as cur:  # noqa: B017
+    with (
+        pytest.raises(adbc_driver_manager.DatabaseError),
+        backend_connection.connection.cursor() as cur,
+    ):
         cur.execute(f"SELECT 1 FROM {proc.full_table_name}")
     backend_connection.connection.rollback()
 

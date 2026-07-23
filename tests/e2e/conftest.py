@@ -11,6 +11,9 @@ from adbc_driver_manager import ProgrammingError, dbapi
 from testcontainers.community.mssql import SqlServerContainer
 from testcontainers.community.postgres import PostgresContainer
 
+from target_adbc import target as target_module
+from target_adbc.target import TargetADBC
+
 if TYPE_CHECKING:
     from collections.abc import Generator
     from pathlib import Path
@@ -41,6 +44,30 @@ def _mssql_container() -> Generator[SqlServerContainer, None, None]:
         yield container
 
 
+def _connect(uri: str) -> dbapi.Connection:
+    """Connect using the same driver-resolution logic as TargetADBC itself.
+
+    This is deliberately not reimplemented here: duplicating the
+    PyPI-bundled-driver-vs-`dbc`-manifest resolution logic is exactly what let
+    this fixture drift out of sync with target.py in the first place.
+    """
+    target = TargetADBC(config={"uri": uri})
+    return dbapi.connect(**target.get_connect_kwargs())
+
+
+def _driver_available(scheme: str, package: str | None) -> bool:
+    """Cheaply check whether a driver can be resolved, without connecting."""
+    if package is not None and target_module._bundled_driver_path(package) is not None:  # ruff:ignore[private-member-access]
+        return True
+    try:
+        dbapi.connect(driver=scheme)
+    except ProgrammingError:
+        return True  # driver loaded, just needs more args
+    except Exception:  # ruff:ignore[blind-except]
+        return False
+    return True
+
+
 @pytest.fixture
 def backend_connection(
     request: pytest.FixtureRequest,
@@ -48,46 +75,29 @@ def backend_connection(
 ) -> Generator[BackendConnection, None, None]:
     backend: str = request.param
     if backend == "duckdb":
-        pytest.importorskip("duckdb")
-        conn = dbapi.connect(driver="duckdb", db_kwargs={"path": str(tmp_path / "test.duckdb")})
+        conn = _connect(f"duckdb://{tmp_path.joinpath('test.duckdb').as_posix()}")
         yield BackendConnection(connection=conn, schema_name=None)
         conn.close()
     elif backend == "sqlite":
-        conn = dbapi.connect(
-            driver="sqlite",
-            db_kwargs={"uri": (tmp_path / "test.sqlite").as_uri()},
-        )
+        conn = _connect(f"sqlite://{tmp_path.joinpath('test.sqlite').as_posix()}")
         yield BackendConnection(connection=conn, schema_name=None)
         conn.close()
     elif backend == "postgres":
-        try:
-            dbapi.connect(driver="postgresql", db_kwargs={})
-        except ProgrammingError:
-            pass  # INVALID_STATE = driver loaded, just needs a URI
-        except Exception as e:
-            pytest.skip(f"PostgreSQL ADBC driver not available: {e}")
-        pg_container: PostgresContainer = request.getfixturevalue("_postgres_container")
-        host = pg_container.get_container_host_ip()
-        port = pg_container.get_exposed_port(5432)
-        uri = (
-            f"postgresql://{pg_container.username}:{pg_container.password}"
-            f"@{host}:{port}/{pg_container.dbname}"
-        )
-        conn = dbapi.connect(driver="postgresql", db_kwargs={"uri": uri})
+        if not _driver_available("postgresql", "adbc_driver_postgresql"):
+            pytest.skip("PostgreSQL ADBC driver not available")
+        pg: PostgresContainer = request.getfixturevalue("_postgres_container")
+        host = pg.get_container_host_ip()
+        port = pg.get_exposed_port(5432)
+        conn = _connect(f"postgresql://{pg.username}:{pg.password}@{host}:{port}/{pg.dbname}")
         yield BackendConnection(connection=conn, schema_name="public")
         conn.close()
     elif backend == "mssql":
-        try:
-            dbapi.connect(driver="mssql", db_kwargs={})
-        except ProgrammingError:
-            pass  # INVALID_ARGUMENT = driver loaded, just needs a URI
-        except Exception as e:
-            pytest.skip(f"MSSQL ADBC driver not available: {e}")
-        mssql_container: SqlServerContainer = request.getfixturevalue("_mssql_container")
-        host = mssql_container.get_container_host_ip()
-        port = mssql_container.get_exposed_port(1433)
-        uri = f"sqlserver://SA:{mssql_container.password}@{host}:{port}?database={mssql_container.dbname}"
-        conn = dbapi.connect(driver="mssql", db_kwargs={"uri": uri})
+        if not _driver_available("mssql", None):
+            pytest.skip("MSSQL ADBC driver not available")
+        mssql: SqlServerContainer = request.getfixturevalue("_mssql_container")
+        host = mssql.get_container_host_ip()
+        port = mssql.get_exposed_port(1433)
+        conn = _connect(f"mssql://SA:{mssql.password}@{host}:{port}?database={mssql.dbname}")
         yield BackendConnection(connection=conn, schema_name="dbo")
         conn.close()
 

@@ -1,0 +1,4 @@
+# dbc driver list
+[drivers]
+[drivers.mssql]
+version = '>=1.5.0'

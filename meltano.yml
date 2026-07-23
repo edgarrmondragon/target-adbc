@@ -21,39 +21,9 @@ plugins:
     capabilities:
     - structured-logging
     settings:
-    - name: driver
-      kind: options
-      description: ADBC driver name (e.g., duckdb, sqlite, postgresql)
-      options:
-      - label: DuckDB
-        value: duckdb
-      - label: SQLite
-        value: sqlite
-      - label: PostgreSQL
-        value: postgresql
-
-    # DuckDB settings
-    - name: duckdb.path
+    - name: uri
       kind: string
-      description: Path to the DuckDB database file
-      placeholder: file:///path/to/database.duckdb
-
-    # SQLite settings
-    - name: sqlite.uri
-      kind: string
-      description: URI to the SQLite database file
-      placeholder: file:///path/to/database.sqlite
-
-    # PostgreSQL settings
-    - name: postgresql.uri
-      kind: string
-      description: URI to the PostgreSQL database
-      placeholder: Ex. postgresql://postgres:password@localhost:5432/database
-      sensitive: true
-
-    - name: mssql.uri
-      kind: string
-      description: URI to the PostgreSQL database
+      description: ADBC connection URI, e.g. duckdb://path/to.db, sqlite://path/to.db, postgresql://user:pass@host/db
       placeholder: Ex. postgresql://postgres:password@localhost:5432/database
       sensitive: true
 
@@ -98,17 +68,15 @@ plugins:
       description: Default length for VARCHAR columns when not specified
 
   - name: target-adbc-duckdb
+    pip_url: -e .[duckdb]
     inherit_from: target-adbc
     config:
-      driver: duckdb
+      uri: duckdb://${MELTANO_PROJECT_ROOT}/output/warehouse.duckdb
       overwrite_behavior: replace
-      duckdb:
-        path: ${MELTANO_PROJECT_ROOT}/output/warehouse.duckdb
 
   - name: target-adbc-sqlite
+    pip_url: -e .[sqlite]
     inherit_from: target-adbc
     config:
-      driver: sqlite
+      uri: sqlite://${MELTANO_PROJECT_ROOT}/output/warehouse.sqlite
       overwrite_behavior: replace
-      sqlite:
-        uri: ${MELTANO_PROJECT_ROOT}/output/warehouse.sqlite

@@ -1,5 +1,5 @@
 {
-  "driver": "duckdb",
+  "uri": "duckdb://",
   "duckdb": {
     "path": "fedidb.duckdb"
   },

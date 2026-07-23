@@ -12,10 +12,10 @@ def test_end_to_end_sqlite(singer_messages: list[str], tmp_path: Path) -> None:
     input_file.write_text("\n".join(singer_messages))
 
     # Create target
-    target = TargetADBC(config={"driver": "sqlite", "sqlite": {"uri": db_path.as_uri()}})
+    target = TargetADBC(config={"uri": f"sqlite://{db_path.as_posix()}"})
 
     # Process messages
-    with open(input_file) as f:
+    with input_file.open() as f:
         target.listen(f)
 
     # Verify data was loaded
