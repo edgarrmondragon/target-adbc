@@ -18,7 +18,7 @@ env:
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: read
     strategy:
@@ -33,6 +33,21 @@ jobs:
         drivers_source:
         - pypi
         - dbc
+        os:
+        - ubuntu-latest
+        include:
+        - python-version: 3.14
+          drivers_source: pypi
+          os: windows-latest
+        - python-version: 3.14
+          drivers_source: dbc
+          os: windows-latest
+        - python-version: 3.14
+          drivers_source: pypi
+          os: macos-latest
+        - python-version: 3.14
+          drivers_source: dbc
+          os: macos-latest
 
     steps:
       - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e # v6-beta
@@ -46,6 +61,7 @@ jobs:
         run: uvx dbc sync --path required.dbc.toml
 
       - name: Set up Python ${{ matrix.python-version }}
+        shell: sh
         env:
           PYTHON_VERSION: ${{ matrix.python-version }}
         run: uv python install "$PYTHON_VERSION"

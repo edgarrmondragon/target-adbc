@@ -2,16 +2,13 @@
 
 from __future__ import annotations
 
-import importlib.util
-import pathlib
 import sys
-import urllib.parse
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any
 
-from adbc_driver_manager import dbapi
 from singer_sdk import typing as th
 from singer_sdk.target_base import Target
 
+from target_adbc import connect
 from target_adbc.sinks import ADBCSink
 
 if sys.version_info >= (3, 12):
@@ -20,33 +17,9 @@ else:
     from typing_extensions import override
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
-    from pathlib import Path
+    from collections.abc import Sequence
 
-
-class ConnectKwargs(TypedDict, total=False):
-    driver: str | Path | None
-    uri: str
-    entrypoint: str
-    db_kwargs: Mapping[str, str | Path]
-
-
-def _bundled_driver_path(package: str) -> str | None:
-    """Return the path to a driver shared library bundled with `package`, if installed.
-
-    Packages like ``adbc-driver-sqlite`` and ``adbc-driver-postgresql`` bundle a
-    prebuilt ``lib<package>.so`` next to their ``__init__.py``, regardless of platform.
-    Using this path directly avoids depending on an ADBC driver manifest being
-    installed separately on the host (e.g. via the `dbc` CLI), which can drift out of
-    sync with what's actually pinned in the project's dependencies.
-    """
-    spec = importlib.util.find_spec(package)
-    if spec is None or not spec.submodule_search_locations:
-        return None
-
-    package_dir = pathlib.Path(next(iter(spec.submodule_search_locations)))
-    driver_path = package_dir / f"lib{package}.so"
-    return str(driver_path) if driver_path.is_file() else None
+    from adbc_driver_manager import dbapi
 
 
 class TargetADBC(Target):
@@ -184,41 +157,12 @@ class TargetADBC(Target):
             connection=self.connection,
         )
 
-    def get_connect_kwargs(self) -> ConnectKwargs:
-        parsed = urllib.parse.urlparse(self._uri)
-        kwargs: ConnectKwargs = {"db_kwargs": self.config.get(parsed.scheme, {})}
-        if (
-            # Use driver shipped with duckdb Python library if available
-            parsed.scheme == "duckdb"
-            and (duckdb_module_spec := importlib.util.find_spec("_duckdb"))
-        ):
-            kwargs["driver"] = duckdb_module_spec.origin
-            kwargs["uri"] = self._uri
-            kwargs["entrypoint"] = "duckdb_adbc_init"
-        elif parsed.scheme == "sqlite":
-            # Use driver shipped with adbc-driver-sqlite Python library if available
-            kwargs["driver"] = _bundled_driver_path("adbc_driver_sqlite") or "sqlite"
-            # The SQLite driver doesn't understand "sqlite://" URIs, only
-            # raw paths or "file://" URIs.
-            kwargs["uri"] = self._uri.removeprefix("sqlite://")
-        elif (
-            # Use driver shipped with adbc-driver-postgresql Python library if available
-            parsed.scheme == "postgresql"
-            and (pg_driver_path := _bundled_driver_path("adbc_driver_postgresql"))
-        ):
-            kwargs["driver"] = pg_driver_path
-            kwargs["uri"] = self._uri
-        else:
-            kwargs["driver"] = self._uri
-
-        return kwargs
-
     @property
     def connection(self) -> dbapi.Connection:
         """Get or create the shared ADBC connection."""
         self.logger.info("Connecting to database using URI: %s", self._uri)
         if self._connection is None:
-            self._connection = dbapi.connect(**self.get_connect_kwargs())
+            self._connection = connect.get_connection(self.config)
         return self._connection
 
     def _close_connection(self) -> None:
