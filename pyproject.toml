@@ -52,13 +52,13 @@ source = "vcs"
 
 [tool.uv.sources]
 singer-sdk = { git = "https://github.com/meltano/sdk.git", rev = "main" }
-adbc-driver-manager = { "index" = "arrow-adbc-nightlies" }
-adbc-driver-postgresql = { "index" = "arrow-adbc-nightlies" }
-adbc-driver-sqlite = { "index" = "arrow-adbc-nightlies" }
+# adbc-driver-manager = { "index" = "arrow-adbc-nightlies" }
+# adbc-driver-postgresql = { "index" = "arrow-adbc-nightlies" }
+# adbc-driver-sqlite = { "index" = "arrow-adbc-nightlies" }
 
-[[tool.uv.index]]
-name = "arrow-adbc-nightlies"
-url = "https://repo.fury.io/arrow-adbc-nightlies"
+# [[tool.uv.index]]
+# name = "arrow-adbc-nightlies"
+# url = "https://repo.fury.io/arrow-adbc-nightlies"
 
 [tool.ruff]
 line-length = 100

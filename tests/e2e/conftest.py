@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import dataclasses
+import importlib.util
+import os
 import re
+import sys
 from typing import TYPE_CHECKING
 
 import pytest
@@ -11,14 +14,17 @@ from adbc_driver_manager import ProgrammingError, dbapi
 from testcontainers.community.mssql import SqlServerContainer
 from testcontainers.community.postgres import PostgresContainer
 
-from target_adbc import target as target_module
-from target_adbc.target import TargetADBC
+from target_adbc.connect import get_connection
 
 if TYPE_CHECKING:
     from collections.abc import Generator
     from pathlib import Path
 
 BACKENDS = ["duckdb", "sqlite", "postgres", "mssql"]
+
+# testcontainers needs a Docker daemon, which isn't available on the macOS/Windows
+# GitHub Actions runners. Only skip in CI so local runs on those platforms still work.
+_SKIP_CONTAINER_BACKENDS = bool(os.environ.get("CI")) and sys.platform != "linux"
 
 
 @dataclasses.dataclass
@@ -44,20 +50,22 @@ def _mssql_container() -> Generator[SqlServerContainer, None, None]:
         yield container
 
 
-def _connect(uri: str) -> dbapi.Connection:
-    """Connect using the same driver-resolution logic as TargetADBC itself.
+def _file_uri(scheme: str, path: Path) -> str:
+    """Build a `scheme:///path` URI, including the empty-authority slash Windows needs.
 
-    This is deliberately not reimplemented here: duplicating the
-    PyPI-bundled-driver-vs-`dbc`-manifest resolution logic is exactly what let
-    this fixture drift out of sync with target.py in the first place.
+    `PureWindowsPath.as_posix()` yields drive-letter paths like ``C:/Users/...``,
+    which don't start with ``/``. Without a forced leading slash, `scheme://C:/...`
+    parses `C:` as the URI authority instead of part of the path.
     """
-    target = TargetADBC(config={"uri": uri})
-    return dbapi.connect(**target.get_connect_kwargs())
+    posix = path.as_posix()
+    if not posix.startswith("/"):
+        posix = f"/{posix}"
+    return f"{scheme}://{posix}"
 
 
 def _driver_available(scheme: str, package: str | None) -> bool:
     """Cheaply check whether a driver can be resolved, without connecting."""
-    if package is not None and target_module._bundled_driver_path(package) is not None:  # ruff:ignore[private-member-access]
+    if package is not None and importlib.util.find_spec(package) is not None:
         return True
     try:
         dbapi.connect(driver=scheme)
@@ -75,29 +83,35 @@ def backend_connection(
 ) -> Generator[BackendConnection, None, None]:
     backend: str = request.param
     if backend == "duckdb":
-        conn = _connect(f"duckdb://{tmp_path.joinpath('test.duckdb').as_posix()}")
+        conn = get_connection({"uri": f"duckdb://{tmp_path / 'test.duckdb'}"})
         yield BackendConnection(connection=conn, schema_name=None)
         conn.close()
     elif backend == "sqlite":
-        conn = _connect(f"sqlite://{tmp_path.joinpath('test.sqlite').as_posix()}")
+        conn = get_connection({"uri": f"sqlite://{tmp_path / 'test.sqlite'}"})
         yield BackendConnection(connection=conn, schema_name=None)
         conn.close()
     elif backend == "postgres":
+        if _SKIP_CONTAINER_BACKENDS:
+            pytest.skip("Container-based backends are skipped on non-Linux CI runners")
         if not _driver_available("postgresql", "adbc_driver_postgresql"):
             pytest.skip("PostgreSQL ADBC driver not available")
         pg: PostgresContainer = request.getfixturevalue("_postgres_container")
         host = pg.get_container_host_ip()
         port = pg.get_exposed_port(5432)
-        conn = _connect(f"postgresql://{pg.username}:{pg.password}@{host}:{port}/{pg.dbname}")
+        uri = f"postgresql://{pg.username}:{pg.password}@{host}:{port}/{pg.dbname}"
+        conn = get_connection({"uri": uri})
         yield BackendConnection(connection=conn, schema_name="public")
         conn.close()
     elif backend == "mssql":
+        if _SKIP_CONTAINER_BACKENDS:
+            pytest.skip("Container-based backends are skipped on non-Linux CI runners")
         if not _driver_available("mssql", None):
             pytest.skip("MSSQL ADBC driver not available")
         mssql: SqlServerContainer = request.getfixturevalue("_mssql_container")
         host = mssql.get_container_host_ip()
         port = mssql.get_exposed_port(1433)
-        conn = _connect(f"mssql://SA:{mssql.password}@{host}:{port}?database={mssql.dbname}")
+        uri = f"mssql://SA:{mssql.password}@{host}:{port}?database={mssql.dbname}"
+        conn = get_connection({"uri": uri})
         yield BackendConnection(connection=conn, schema_name="dbo")
         conn.close()
 
