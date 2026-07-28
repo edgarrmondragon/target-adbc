@@ -100,7 +100,7 @@ class BatchProcessor:
         """Add Singer metadata columns to a record when configured."""
         prepared = record.copy()
         if self.add_record_metadata:
-            now = datetime.datetime.now(datetime.timezone.utc)
+            now = datetime.datetime.now(datetime.UTC)
             prepared["_sdc_extracted_at"] = record.get("_sdc_extracted_at", now)
             prepared["_sdc_received_at"] = record.get("_sdc_received_at", now)
             prepared["_sdc_batched_at"] = now
@@ -115,9 +115,9 @@ class BatchProcessor:
 
         if pa.types.is_timestamp(arrow_type):
             if isinstance(value, str):
-                value = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+                value = datetime.datetime.fromisoformat(value)
             if isinstance(value, datetime.datetime) and value.tzinfo is None:
-                return value.replace(tzinfo=datetime.timezone.utc)
+                return value.replace(tzinfo=datetime.UTC)
             return value
 
         if pa.types.is_date(arrow_type):

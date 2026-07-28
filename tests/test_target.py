@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, Any
 from unittest import mock
 
 import adbc_driver_manager
@@ -26,7 +26,7 @@ StandardTargetTests = get_target_test_class(
     },
 )
 
-Config: TypeAlias = dict[str, Any]
+type Config = dict[str, Any]
 
 
 class TestTargetStandard(StandardTargetTests):  # type: ignore[misc,valid-type] # ty: ignore[unsupported-base]

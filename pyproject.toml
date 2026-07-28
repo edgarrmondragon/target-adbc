@@ -7,11 +7,9 @@ name = "target-adbc"
 description = "Singer target for loading data into ADBC-compatible databases"
 readme = "README.md"
 license = "Apache-2.0"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 classifiers = [
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
@@ -21,7 +19,6 @@ dependencies = [
   "adbc-driver-manager~=1.11",
   "pyarrow~=25.0",
   "singer-sdk~=0.55.0a1",
-  "typing-extensions>=4.15; python_full_version<'3.12'",
 ]
 optional-dependencies.duckdb = [
   "duckdb>=1.5.5",
@@ -41,8 +38,8 @@ dev = [
   "mypy>=2.3",
   "pyarrow-stubs>=20.0.0.20251107",
   "pytest>=9.1",
-  "ruff>=0.15.22",
-  "testcontainers[mssql,postgres]>=4.15.0rc4",
+  "ruff>=0.16",
+  "testcontainers[mssql,postgres]>=4.15",
   "ty>=0.0.62",
 ]
 
@@ -63,7 +60,7 @@ url = "https://repo.fury.io/arrow-adbc-nightlies"
 [tool.ruff]
 line-length = 100
 preview = true
-required-version = ">=0.15.22"
+required-version = ">=0.16"
 [tool.ruff.lint]
 extend-select = [
   "ERA",  # https://docs.astral.sh/ruff/rules/#eradicate-era
