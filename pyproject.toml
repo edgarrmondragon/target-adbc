@@ -83,10 +83,10 @@ extend-select = [
 ]
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**/*.py" = [
-  "any-type",  # Any is fine for fixture / test parameter types
-  "magic-value-comparison", # Magic value is fine in tests
-  "assert",    # pytest uses assert statements
-  "hardcoded-sql-expression",    # Raw SQL queries are OK in tests
+  "any-type",
+  "magic-value-comparison",
+  "assert",
+  "hardcoded-sql-expression",
 ]
 
 [tool.mypy]
@@ -111,3 +111,65 @@ log_level = "INFO"
 minversion = "9"
 strict = true
 testpaths = [ "tests" ]
+
+[tool.tox]
+requires = [
+  "tox>=4.58",
+  "tox-uv>=1.36",
+]
+env_list = [
+  "lint",
+  { prefix = "3.", start = 10, stop = 15 },
+  "pypi",
+]
+
+[tool.tox.env.lint]
+description = "lint"
+dependency_groups = [
+  "dev",
+]
+commands = [
+  [
+    "ruff",
+    "check",
+    { replace = "if", condition = "env.GITHUB_ACTIONS == 'true'", then = [ "--output-format=github" ], else = [], extend = true },
+  ],
+  [
+    "ruff",
+    "format",
+    "--check",
+    { replace = "if", condition = "env.GITHUB_ACTIONS == 'true'", then = [ "--output-format=github" ], else = [], extend = true },
+  ],
+  ["mypy", "target_adbc", "tests"],
+  [
+    "ty",
+    "check",
+    "target_adbc",
+    "tests",
+    { replace = "if", condition = "env.GITHUB_ACTIONS == 'true'", then = [ "--output-format=github" ], else = [], extend = true },
+  ],
+]
+
+[tool.tox.env.dbc]
+description = "run tests on Python {py_dot_ver} with dbc-managed drivers"
+extras = []
+
+[tool.tox.env_run_base]
+description = "run tests on Python {py_dot_ver}"
+pass_env = [
+  "CI",
+]
+dependency_groups = [
+  "dev",
+]
+extras = [
+  "duckdb",
+  "postgres",
+  "sqlite",
+]
+commands = [
+  [
+    "pytest",
+    { replace = "posargs", default = [ "tests" ], extend = true },
+  ],
+]
