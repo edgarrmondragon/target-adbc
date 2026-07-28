@@ -2,19 +2,13 @@
 
 from __future__ import annotations
 
-import sys
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, override
 
 from singer_sdk import typing as th
 from singer_sdk.target_base import Target
 
 from target_adbc import connect
 from target_adbc.sinks import ADBCSink
-
-if sys.version_info >= (3, 12):
-    from typing import override
-else:
-    from typing_extensions import override
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
