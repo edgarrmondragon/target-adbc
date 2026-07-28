@@ -55,24 +55,21 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
+          cache-suffix: ${{ matrix.drivers_source }}
           python-version: ${{ matrix.python-version }}
 
       - name: Install drivers with no PyPI package
         run: uvx dbc sync --path required.dbc.toml
-
-      - name: Install dependencies
-        run: uv sync
-
-      - name: Install ADBC driver extras from PyPI
-        if: ${{ matrix.drivers_source == 'pypi' }}
-        run: uv sync --all-extras
 
       - name: Install remaining ADBC drivers with dbc
         if: ${{ matrix.drivers_source == 'dbc' }}
         run: uvx dbc sync --path all.dbc.toml
 
       - name: Run tests
-        run: uv run pytest tests/ -v
+        if: ${{ matrix.drivers_source == 'dbc' }}
+        env:
+          TOXENV: ${{ case(matrix.drivers_source == 'dbc', 'dbc', matrix.python-version) }}
+        run: uvx --with tox-uv tox -- -v
 
   lint:
     name: Lint and Type Check
@@ -88,16 +85,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          cache-suffix: typing
+          cache-suffix: lint
 
-      - name: Install dependencies
-        run: uv sync --all-extras
-
-      - name: Run ruff
-        run: uv run ruff check .
-
-      - name: Run mypy
-        run: uv run mypy target_adbc tests
-
-      - name: Run ty
-        run: uv run ty check target_adbc tests
+      - name: Tox
+        run: uvx --with tox-uv tox -e lint
