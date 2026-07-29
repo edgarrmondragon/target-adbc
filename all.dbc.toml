@@ -7,7 +7,7 @@ version = '>=1.5.5'
 version = '>=1.5.0'
 
 [drivers.postgresql]
-version = '>=1.11.0'
+version = '>=1.12.0'
 
 [drivers.sqlite]
-version = '>=1.11.0'
+version = '>=1.12.0'

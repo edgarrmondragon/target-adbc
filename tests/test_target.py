@@ -176,7 +176,7 @@ def test_connection_uses_bundled_sqlite_driver_when_extra_installed(tmp_path: Pa
         mock.call("adbc_driver_sqlite.dbapi"),
     ])
     fake_spec.loader.exec_module.assert_called_once()
-    fake_module.connect.assert_called_once_with("/path/to/foo.db")
+    fake_module.connect.assert_called_once_with(uri)
 
 
 def test_connection_uses_bundled_postgres_driver_when_extra_installed() -> None:
@@ -213,7 +213,7 @@ def test_connection_falls_back_to_driver_manager_when_sqlite_extra_missing(
         _ = target.connection
 
     mock_find_spec.assert_called_with("adbc_driver_sqlite")
-    mock_connect.assert_called_once_with(driver="sqlite", uri=str(db_path), db_kwargs={})
+    mock_connect.assert_called_once_with(driver="sqlite", uri=uri, db_kwargs={})
 
 
 def test_connection_falls_back_to_driver_manager_when_postgres_extra_missing() -> None:
