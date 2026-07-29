@@ -19,9 +19,6 @@ def get_connection(config: Mapping[str, Any]) -> adbc_driver_manager.dbapi.Conne
     driver = parsed.scheme
     db_kwargs: dict[str, Any] = config.get(parsed.scheme, {})
 
-    if driver == "sqlite":
-        uri = uri.removeprefix(f"{parsed.scheme}://")
-
     if (
         driver == "duckdb"
         and importlib.util.find_spec("adbc_driver_duckdb")
@@ -31,7 +28,7 @@ def get_connection(config: Mapping[str, Any]) -> adbc_driver_manager.dbapi.Conne
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
 
-        return module.connect(uri.removeprefix(f"{parsed.scheme}://"), **db_kwargs)  # type: ignore[no-any-return]
+        return module.connect(uri.removeprefix("duckdb://"), **db_kwargs)  # type: ignore[no-any-return]
 
     if (
         driver == "sqlite"

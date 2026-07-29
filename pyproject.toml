@@ -16,7 +16,7 @@ classifiers = [
 ]
 dynamic = [ "version" ]
 dependencies = [
-  "adbc-driver-manager~=1.11",
+  "adbc-driver-manager~=1.12",
   "pyarrow~=25.0",
   "singer-sdk~=0.55.0a1",
 ]
@@ -24,10 +24,10 @@ optional-dependencies.duckdb = [
   "duckdb>=1.5.5",
 ]
 optional-dependencies.postgres = [
-  "adbc-driver-postgresql~=1.11",
+  "adbc-driver-postgresql~=1.12",
 ]
 optional-dependencies.sqlite = [
-  "adbc-driver-sqlite~=1.11",
+  "adbc-driver-sqlite~=1.12",
 ]
 [project.scripts]
 target-adbc = "target_adbc.target:TargetADBC.cli"
