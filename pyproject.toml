@@ -17,8 +17,8 @@ classifiers = [
 dynamic = [ "version" ]
 dependencies = [
   "adbc-driver-manager~=1.12",
-  "pyarrow~=25.0",
-  "singer-sdk~=0.55.0a1",
+  "pyarrow>=25.0",
+  "singer-sdk~=0.55.0a9",
 ]
 optional-dependencies.duckdb = [
   "duckdb>=1.5.5",
@@ -34,12 +34,21 @@ target-adbc = "target_adbc.target:TargetADBC.cli"
 
 [dependency-groups]
 dev = [
+  { include-group = "linting" },
+  { include-group = "testing" },
+  { include-group = "typing" },
+]
+linting = [
+  "ruff>=0.16",
+]
+testing = [
   "coverage>=7.15",
+  "pytest>=9.1",
+  "testcontainers[mssql,postgres]>=4.15",
+]
+typing = [
   "mypy>=2.3",
   "pyarrow-stubs>=20.0.0.20251107",
-  "pytest>=9.1",
-  "ruff>=0.16",
-  "testcontainers[mssql,postgres]>=4.15",
   "ty>=0.0.62",
 ]
 
@@ -120,13 +129,15 @@ requires = [
 env_list = [
   "lint",
   { prefix = "3.", start = 10, stop = 15 },
-  "pypi",
+  "dbc",
 ]
 
 [tool.tox.env.lint]
 description = "lint"
 dependency_groups = [
-  "dev",
+  "linting",
+  "testing",
+  "typing",
 ]
 commands = [
   [
@@ -156,11 +167,12 @@ extras = []
 
 [tool.tox.env_run_base]
 description = "run tests on Python {py_dot_ver}"
+runner = "uv-venv-runner"
 pass_env = [
   "CI",
 ]
 dependency_groups = [
-  "dev",
+  "testing",
 ]
 extras = [
   "duckdb",

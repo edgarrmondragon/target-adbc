@@ -9,11 +9,10 @@ from singer_sdk.sinks import BatchSink
 from target_adbc.batch import BatchProcessor
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from adbc_driver_manager import dbapi
     from singer_sdk import Target
     from singer_sdk.helpers.types import Record
+    from singer_sdk.singerlib.types import KeyProperties
 
 
 class ADBCSink(BatchSink):
@@ -24,7 +23,7 @@ class ADBCSink(BatchSink):
         target: Target,
         stream_name: str,
         schema: dict[str, Any],
-        key_properties: Sequence[str] | None,
+        key_properties: KeyProperties | None,
         *,
         connection: dbapi.Connection,
     ) -> None:
