@@ -16,13 +16,13 @@ repos:
       - id: check-meltano
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.5
+    rev: v0.16.7
     hooks:
       - id: ruff-check
       - id: ruff-format
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.12.7
+    rev: 0.12.15
     hooks:
       - id: uv-audit
       - id: uv-lock
