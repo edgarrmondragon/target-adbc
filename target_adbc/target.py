@@ -11,9 +11,8 @@ from target_adbc import connect
 from target_adbc.sinks import ADBCSink
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from adbc_driver_manager import dbapi
+    from singer_sdk.singerlib.types import KeyProperties
 
 
 class TargetADBC(Target):
@@ -141,7 +140,7 @@ class TargetADBC(Target):
         *,
         stream_name: str,
         schema: dict[str, Any],
-        key_properties: Sequence[str] | None = None,
+        key_properties: KeyProperties | None = None,
     ) -> ADBCSink:
         return ADBCSink(
             target=self,
