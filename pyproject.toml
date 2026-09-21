@@ -129,7 +129,7 @@ requires = [
 ]
 env_list = [
   "lint",
-  { prefix = "3.", start = 10, stop = 15 },
+  { prefix = "3.", start = 10 },
   "dbc",
 ]
 
