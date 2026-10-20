@@ -13,6 +13,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
 ]
 dynamic = [ "version" ]
 dependencies = [
@@ -57,15 +58,26 @@ fallback-version = "0.1.0.dev0"
 source = "vcs"
 
 [tool.uv.sources]
-adbc-driver-manager = { "index" = "arrow-adbc-nightlies" }
-adbc-driver-postgresql = { "index" = "arrow-adbc-nightlies" }
-adbc-driver-sqlite = { "index" = "arrow-adbc-nightlies" }
+adbc-driver-manager = { "index" = "arrow-adbc-nightlies", marker = "python_version >= '3.15'" }
+adbc-driver-postgresql = { "index" = "arrow-adbc-nightlies", marker = "python_version >= '3.15'" }
+adbc-driver-sqlite = { "index" = "arrow-adbc-nightlies", marker = "python_version >= '3.15'" }
+# pyarrow = { index = "scientific-python-nightly-wheels", marker = "python_version >= '3.16'" }
 singer-sdk = { git = "https://github.com/meltano/sdk.git", rev = "main" }
 
 [[tool.uv.index]]
 name = "arrow-adbc-nightlies"
 url = "https://repo.fury.io/arrow-adbc-nightlies"
 explicit = true
+
+[[tool.uv.index]]
+name = "scientific-python-nightly-wheels"
+url = "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"
+explicit = true
+
+[tool.uv]
+override-dependencies = [
+    "duckdb>= 2.0.0.dev2610191843",
+]
 
 [tool.ruff]
 line-length = 100
@@ -129,7 +141,7 @@ requires = [
 ]
 env_list = [
   "lint",
-  { prefix = "3.", start = 10 },
+  { prefix = "3.", start = 12, stop = 15 },
   "dbc",
 ]
 
@@ -168,7 +180,7 @@ extras = []
 
 [tool.tox.env_run_base]
 description = "run tests on Python {py_dot_ver}"
-runner = "uv-venv-runner"
+runner = "uv-venv-lock-runner"
 pass_env = [
   "CI",
 ]
