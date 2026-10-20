@@ -76,7 +76,7 @@ explicit = true
 
 [tool.uv]
 override-dependencies = [
-    "duckdb>= 2.0.0.dev2610191843",
+    "duckdb>=2.0.0.dev2610191843 ; python_version >= '3.15'",
 ]
 
 [tool.ruff]
