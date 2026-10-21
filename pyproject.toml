@@ -131,7 +131,7 @@ testpaths = [ "tests" ]
 
 [tool.tox]
 requires = [
-  "tox>=4.58",
+  "tox>=4.65",
   "tox-uv>=1.36",
 ]
 env_list = [
@@ -147,6 +147,7 @@ dependency_groups = [
   "testing",
   "typing",
 ]
+base_python_file = [ ".python-version" ]
 commands = [
   [
     "ruff",
