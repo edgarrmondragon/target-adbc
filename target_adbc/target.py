@@ -130,7 +130,7 @@ class TargetADBC(Target):
         self._connection: dbapi.Connection | None = None
         self._uri: str = self.config["uri"]
 
-        if self._uri.startswith(("duckdb://", "sqlite://")):
+        if self._uri.startswith(("duckdb", "sqlite")):
             self.logger.info("Setting max_parallelism to 1 to avoid database locks.")
             self._max_parallelism = 1
 
