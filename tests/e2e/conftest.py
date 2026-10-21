@@ -39,13 +39,13 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
 
 @pytest.fixture(scope="session")
-def _postgres_container() -> Generator[PostgresContainer, None, None]:
+def _postgres_container() -> Generator[PostgresContainer]:
     with PostgresContainer("postgres:16-alpine") as container:
         yield container
 
 
 @pytest.fixture(scope="session")
-def _mssql_container() -> Generator[SqlServerContainer, None, None]:
+def _mssql_container() -> Generator[SqlServerContainer]:
     with SqlServerContainer() as container:
         yield container
 
@@ -80,7 +80,7 @@ def _driver_available(scheme: str, package: str | None) -> bool:
 def backend_connection(
     request: pytest.FixtureRequest,
     tmp_path: Path,
-) -> Generator[BackendConnection, None, None]:
+) -> Generator[BackendConnection]:
     backend: str = request.param
     if backend == "duckdb":
         conn = get_connection({"uri": f"duckdb://{tmp_path / 'test.duckdb'}"})
