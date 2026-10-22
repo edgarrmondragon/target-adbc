@@ -26,11 +26,6 @@ def get_connection(config: Mapping[str, Any]) -> adbc_driver_manager.dbapi.Conne
         and (spec := importlib.util.find_spec("adbc_driver_duckdb.dbapi"))
         and spec.loader
     ):
-        # DuckDB 2.0's ADBC driver misbehaves unless the `duckdb` package was imported first.
-        # https://github.com/duckdb/duckdb-python/issues/698
-        with contextlib.suppress(ImportError):
-            import duckdb  # ruff: ignore[import-outside-top-level, unused-import]
-
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
 

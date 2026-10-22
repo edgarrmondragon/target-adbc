@@ -21,8 +21,7 @@ dependencies = [
   "singer-sdk~=0.55.0a9",
 ]
 optional-dependencies.duckdb = [
-  "duckdb>=1.5.5,<2 ; python_version < '3.15'",
-  "duckdb>=2.0.0.dev2610191843 ; python_version >= '3.15'",
+  "duckdb>=2,<3",
 ]
 optional-dependencies.postgres = [
   "adbc-driver-postgresql~=1.12",
