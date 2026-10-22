@@ -1,4 +1,3 @@
-import contextlib
 import importlib.util
 import urllib.parse
 from collections.abc import Mapping
