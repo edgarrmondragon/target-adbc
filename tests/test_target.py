@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import importlib.util
+import tempfile
+import uuid
 from typing import TYPE_CHECKING, Any
 from unittest import mock
 
@@ -22,7 +24,7 @@ if TYPE_CHECKING:
 StandardTargetTests = get_target_test_class(
     target_class=TargetADBC,
     config={
-        "uri": "duckdb:./tmp.db",
+        "uri": f"duckdb:{tempfile.gettempdir()}/{uuid.uuid4().hex[:6]}.db",
     },
 )
 
