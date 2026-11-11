@@ -119,3 +119,26 @@ def test_record_values_roundtrip(backend_connection: BackendConnection, table_na
 
     assert rows[0] == (1, "Alice", "alice@example.com", True, 9.5)
     assert rows[1] == (2, "Bob", "bob@example.com", False, 7.2)
+
+
+def test_upsert(backend_connection: BackendConnection, table_name: str) -> None:
+    """Upsert updates existing keys, inserts new ones and dedupes within a batch."""
+    proc = _make_proc(
+        backend_connection, table_name, overwrite_behavior="upsert", key_properties=["id"]
+    )
+    proc.ingest(SAMPLE_RECORDS)
+    proc.ingest([
+        {"id": 2, "name": "Bobby", "email": "b@example.com", "active": True, "score": 1.0},
+        {"id": 2, "name": "Bob2", "email": "b2@example.com", "active": True, "score": 2.0},
+        {"id": 3, "name": "Carol", "email": "c@example.com", "active": True, "score": 3.0},
+    ])
+
+    with backend_connection.connection.cursor() as cur:
+        cur.execute(f"SELECT id, name FROM {proc.full_table_name} ORDER BY id")
+        rows = cur.fetchall()
+    assert [tuple(r) for r in rows] == [(1, "Alice"), (2, "Bob2"), (3, "Carol")]
+
+
+def test_upsert_requires_keys(backend_connection: BackendConnection, table_name: str) -> None:
+    with pytest.raises(ValueError, match="key_properties"):
+        _make_proc(backend_connection, table_name, overwrite_behavior="upsert")

@@ -88,11 +88,12 @@ class TargetADBC(Target):
             "overwrite_behavior",
             th.StringType,
             default="append",
-            allowed_values=["append", "replace"],
+            allowed_values=["append", "replace", "upsert"],
             description=(
                 "Behavior when the target table already exists:\n"
                 "- 'append': Add new data to the existing table (default)\n"
-                "- 'replace': Drop and recreate the table before loading"
+                "- 'replace': Drop and recreate the table before loading\n"
+                "- 'upsert': Merge records into the table by the stream's key properties"
             ),
         ),
         th.Property(

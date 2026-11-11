@@ -53,6 +53,7 @@ class ADBCSink(BatchSink):
                 table_name=self._get_table_name(),
                 schema_name=self._get_schema_name(),
                 json_schema=self.schema,
+                key_properties=self.key_properties,
                 overwrite_behavior=self.config.get("overwrite_behavior", "append"),
                 add_record_metadata=self.config.get("add_record_metadata", True),
                 logger=self.logger,

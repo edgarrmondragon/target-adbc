@@ -5,13 +5,18 @@ from __future__ import annotations
 import datetime
 import json
 import logging
+import uuid
 from typing import TYPE_CHECKING, Any, Literal
 
 import pyarrow as pa
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from adbc_driver_manager import dbapi
     from singer_sdk.helpers.types import Record
+
+_BACKTICK_VENDORS = frozenset({"mysql", "mariadb", "bigquery"})
 
 
 class BatchProcessor:
@@ -29,7 +34,8 @@ class BatchProcessor:
         schema_name: str | None,
         json_schema: dict[str, Any],
         *,
-        overwrite_behavior: Literal["append", "replace"] = "append",
+        key_properties: Sequence[str] | None = None,
+        overwrite_behavior: Literal["append", "replace", "upsert"] = "append",
         add_record_metadata: bool = True,
         logger: logging.Logger | None = None,
     ) -> None:
@@ -37,7 +43,10 @@ class BatchProcessor:
         self.table_name = table_name
         self.schema_name = schema_name
         self.json_schema = json_schema
+        self.key_properties = list(key_properties or [])
         self.overwrite_behavior = overwrite_behavior
+        if overwrite_behavior == "upsert" and not self.key_properties:
+            raise ValueError("overwrite_behavior 'upsert' requires key_properties")
         self.add_record_metadata = add_record_metadata
         self.logger = logger or logging.getLogger(__name__)
         self._initialized = False
@@ -155,6 +164,81 @@ class BatchProcessor:
             raise
 
     # ------------------------------------------------------------------
+    # Upsert helpers
+    # ------------------------------------------------------------------
+
+    def _quote(self, identifier: str) -> str:
+        """Quote an identifier using the connected vendor's quote character."""
+        vendor = str(self.connection.adbc_get_info().get("vendor_name", "")).lower()
+        if vendor in _BACKTICK_VENDORS:
+            return "`" + identifier.replace("`", "``") + "`"
+        return '"' + identifier.replace('"', '""') + '"'
+
+    def _qualify(self, table_name: str) -> str:
+        parts = [self.schema_name, table_name] if self.schema_name else [table_name]
+        return ".".join(self._quote(p) for p in parts)
+
+    def _dedupe_by_key(self, records: list[Record]) -> list[Record]:
+        """Keep only the last record for each primary key value."""
+        latest: dict[tuple[Any, ...], Record] = {}
+        for record in records:
+            key = tuple(record.get(k) for k in self.key_properties)
+            if None in key:
+                raise ValueError(f"Record is missing a value for key properties: {record}")
+            latest[key] = record
+        return list(latest.values())
+
+    def _upsert(self, arrow_table: pa.Table) -> int:
+        """Merge *arrow_table* into the target table via a staging table.
+
+        Uses only standard SQL (DELETE ... WHERE EXISTS + INSERT ... SELECT) in a
+        single transaction so it works with any ADBC driver.
+        """
+        staging_name = f"_stg_{self.table_name}_{uuid.uuid4().hex[:8]}"
+        staging = self._qualify(staging_name)
+
+        try:
+            row_count = self._merge(arrow_table, staging_name)
+        except Exception:
+            self.connection.rollback()
+            with self.connection.cursor() as cursor:
+                cursor.execute(f"DROP TABLE IF EXISTS {staging}")
+            self.connection.commit()
+            raise
+        return row_count
+
+    def _merge(self, arrow_table: pa.Table, staging_name: str) -> int:
+        target = self._qualify(self.table_name)
+        staging = self._qualify(staging_name)
+        columns = ", ".join(self._quote(f) for f in arrow_table.schema.names)
+        match = " AND ".join(
+            f"s.{self._quote(k)} = {target}.{self._quote(k)}" for k in self.key_properties
+        )
+        with self.connection.cursor() as cursor:
+            # Creates the target on first use; appends zero rows otherwise.
+            cursor.adbc_ingest(
+                self.table_name,
+                arrow_table.slice(0, 0),
+                mode="create_append",
+                db_schema_name=self.schema_name,
+            )
+            row_count = cursor.adbc_ingest(
+                staging_name,
+                arrow_table,
+                mode="replace",
+                db_schema_name=self.schema_name,
+            )
+            delete_sql = (
+                f"DELETE FROM {target} WHERE EXISTS (SELECT 1 FROM {staging} s WHERE {match})"  # ruff:ignore[hardcoded-sql-expression]
+            )
+            insert_sql = f"INSERT INTO {target} ({columns}) SELECT {columns} FROM {staging}"  # ruff:ignore[hardcoded-sql-expression]
+            cursor.execute(delete_sql)
+            cursor.execute(insert_sql)
+            cursor.execute(f"DROP TABLE {staging}")
+        self.connection.commit()
+        return row_count
+
+    # ------------------------------------------------------------------
     # Main entry point
     # ------------------------------------------------------------------
 
@@ -169,7 +253,18 @@ class BatchProcessor:
             return
 
         self.logger.info("Processing batch of %d records", len(records))
+        if self.overwrite_behavior == "upsert":
+            records = self._dedupe_by_key(records)
         arrow_table = self._records_to_arrow_table(records)
+
+        if self.overwrite_behavior == "upsert":
+            self.logger.info("Upserting into %s on %s", self.full_table_name, self.key_properties)
+            row_count = self._upsert(arrow_table)
+            self._initialized = True
+            self.logger.info(
+                "Successfully upserted %d records into %s", row_count, self.full_table_name
+            )
+            return
 
         mode: Literal["replace", "create_append"] = (
             "replace"

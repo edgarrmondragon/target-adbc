@@ -197,4 +197,4 @@ def test_config_schema() -> None:
     assert schema["properties"]["add_record_metadata"]["default"] is True
 
     allowed = schema["properties"]["overwrite_behavior"].get("enum")
-    assert set(allowed) == {"append", "replace"}
+    assert set(allowed) == {"append", "replace", "upsert"}
