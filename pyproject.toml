@@ -21,15 +21,6 @@ dependencies = [
   "singer-sdk~=0.55.0a9",
   "tomli-w>=1.2.0",
 ]
-optional-dependencies.duckdb = [
-  "duckdb>=2,<3",
-]
-optional-dependencies.postgres = [
-  "adbc-driver-postgresql~=1.12",
-]
-optional-dependencies.sqlite = [
-  "adbc-driver-sqlite~=1.12",
-]
 [project.scripts]
 target-adbc = "target_adbc.target:TargetADBC.cli"
 
@@ -59,8 +50,6 @@ source = "vcs"
 
 [tool.uv.sources]
 adbc-driver-manager = { "index" = "arrow-adbc-nightlies", marker = "python_version >= '3.15'" }
-adbc-driver-postgresql = { "index" = "arrow-adbc-nightlies", marker = "python_version >= '3.15'" }
-adbc-driver-sqlite = { "index" = "arrow-adbc-nightlies", marker = "python_version >= '3.15'" }
 # pyarrow = { index = "scientific-python-nightly-wheels", marker = "python_version >= '3.16'" }
 singer-sdk = { git = "https://github.com/meltano/sdk.git", rev = "main" }
 
@@ -137,7 +126,6 @@ requires = [
 env_list = [
   "lint",
   { prefix = "3.", start = 13, stop = 15 },
-  "dbc",
 ]
 
 [tool.tox.env.lint]
@@ -170,10 +158,6 @@ commands = [
   ],
 ]
 
-[tool.tox.env.dbc]
-description = "run tests on Python {py_dot_ver} with dbc-managed drivers"
-extras = []
-
 [tool.tox.env_run_base]
 description = "run tests on Python {py_dot_ver}"
 runner = "uv-venv-lock-runner"
@@ -182,11 +166,6 @@ pass_env = [
 ]
 dependency_groups = [
   "testing",
-]
-extras = [
-  "duckdb",
-  "postgres",
-  "sqlite",
 ]
 commands = [
   [

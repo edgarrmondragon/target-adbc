@@ -28,23 +28,12 @@ jobs:
         - "3.13"
         - "3.14"
         - "3.15"
-        drivers_source:
-        - pypi
-        - dbc
         os:
         - ubuntu-latest
         include:
         - python-version: 3.15
-          drivers_source: pypi
           os: windows-latest
         - python-version: 3.15
-          drivers_source: dbc
-          os: windows-latest
-        - python-version: 3.15
-          drivers_source: pypi
-          os: macos-latest
-        - python-version: 3.15
-          drivers_source: dbc
           os: macos-latest
 
     steps:
@@ -55,19 +44,14 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          cache-suffix: ${{ matrix.drivers_source }}
           python-version: ${{ matrix.python-version }}
 
-      - name: Install drivers with no PyPI package
-        run: uvx dbc sync --path required.dbc.toml
-
-      - name: Install remaining ADBC drivers with dbc
-        if: ${{ matrix.drivers_source == 'dbc' }}
-        run: uvx dbc sync --path all.dbc.toml
+      - name: Install all ADBC drivers with dbc
+        run: uvx dbc sync
 
       - name: Run tests
         env:
-          TOXENV: ${{ case(matrix.drivers_source == 'dbc', 'dbc', matrix.python-version) }}
+          TOXENV: ${{ matrix.python-version }}
         run: uvx --with tox-uv tox -- -v
 
   lint:

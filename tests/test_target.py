@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.util
 import tempfile
 import uuid
 from typing import TYPE_CHECKING, Any
@@ -158,120 +157,21 @@ def test_replace_mode(
 
 
 @pytest.mark.parametrize(
-    ("uri", "module", "path_func", "entrypoint", "db_kwargs"),
+    "uri",
     [
-        pytest.param(
-            "duckdb://",
-            "adbc_driver_duckdb",
-            "driver_path",
-            "duckdb_adbc_init",
-            {"path": ""},
-            id="duckdb",
-        ),
-        pytest.param(
-            "sqlite:///path/to/foo.db",
-            "adbc_driver_sqlite",
-            "_driver_path",
-            None,
-            {"uri": "sqlite:///path/to/foo.db"},
-            id="sqlite",
-        ),
-        pytest.param(
-            "postgresql://localhost/db",
-            "adbc_driver_postgresql",
-            "_driver_path",
-            None,
-            {"uri": "postgresql://localhost/db"},
-            id="postgresql",
-        ),
+        pytest.param("duckdb://", id="duckdb"),
+        pytest.param("sqlite:///path/to/foo.db", id="sqlite"),
+        pytest.param("postgresql://localhost/db", id="postgresql"),
+        pytest.param("sqlserver://localhost/db", id="mssql"),
     ],
 )
-def test_connection_uses_pypi_driver_path_when_installed(
-    uri: str,
-    module: str,
-    path_func: str,
-    entrypoint: str | None,
-    db_kwargs: dict[str, str],
-) -> None:
-    """When the PyPI driver package is installed, pass its library path to the driver manager."""
-    fake_module = mock.Mock()
-    getattr(fake_module, path_func).return_value = "/path/to/libdriver.so"
-    with (
-        mock.patch.object(importlib.util, "find_spec", return_value=mock.Mock()),
-        mock.patch.object(importlib, "import_module", return_value=fake_module) as mock_import,
-        mock.patch.object(dbapi, "connect", return_value=mock.Mock()) as mock_connect,
-    ):
+def test_connection_uses_driver_manager(uri: str) -> None:
+    """Drivers are resolved by name through the driver manager."""
+    with mock.patch.object(dbapi, "connect", return_value=mock.Mock()) as mock_connect:
         target = TargetADBC(config={"uri": uri})
         _ = target.connection
 
-    mock_import.assert_called_once_with(module)
-    mock_connect.assert_called_once_with(
-        driver="/path/to/libdriver.so",
-        entrypoint=entrypoint,
-        db_kwargs=db_kwargs,
-    )
-
-
-def test_connection_falls_back_to_driver_manager_when_duckdb_extra_missing() -> None:
-    """When the `duckdb` package isn't installed, fall back to driver manager."""
-    uri = "duckdb://"
-    with (
-        mock.patch.object(importlib.util, "find_spec", return_value=None) as mock_find_spec,
-        mock.patch.object(dbapi, "connect", return_value=mock.Mock()) as mock_connect,
-    ):
-        target = TargetADBC(config={"uri": uri})
-        _ = target.connection
-
-    mock_find_spec.assert_called_once_with("adbc_driver_duckdb")
-    mock_connect.assert_called_once_with(driver="duckdb", uri=uri, db_kwargs={})
-
-
-def test_connection_falls_back_to_driver_manager_when_sqlite_extra_missing(
-    tmp_path: Path,
-) -> None:
-    """Without `adbc-driver-sqlite` installed, fall back to driver manager."""
-    db_path = tmp_path / "foo.db"
-    uri = f"sqlite://{db_path}"
-    with (
-        mock.patch.object(importlib.util, "find_spec", return_value=None) as mock_find_spec,
-        mock.patch.object(dbapi, "connect", return_value=mock.Mock()) as mock_connect,
-    ):
-        target = TargetADBC(config={"uri": uri})
-        _ = target.connection
-
-    mock_find_spec.assert_called_with("adbc_driver_sqlite")
-    mock_connect.assert_called_once_with(driver="sqlite", uri=uri, db_kwargs={})
-
-
-def test_connection_falls_back_to_driver_manager_when_postgres_extra_missing() -> None:
-    """Without `adbc-driver-postgresql` installed, fall back to driver manager."""
-    uri = "postgresql://localhost/db"
-    with (
-        mock.patch.object(importlib.util, "find_spec", return_value=None) as mock_find_spec,
-        mock.patch.object(dbapi, "connect", return_value=mock.Mock()) as mock_connect,
-    ):
-        target = TargetADBC(config={"uri": uri})
-        _ = target.connection
-
-    mock_find_spec.assert_called_with("adbc_driver_postgresql")
-    mock_connect.assert_called_once_with(driver="postgresql", uri=uri, db_kwargs={})
-
-
-def test_connection_mssql_scheme_skips_all_bundled_driver_lookups() -> None:
-    """Schemes without a bundled-driver branch should use the compact URI form as-is."""
-    with (
-        mock.patch.object(importlib.util, "find_spec") as mock_find_spec,
-        mock.patch.object(dbapi, "connect", return_value=mock.Mock()) as mock_connect,
-    ):
-        target = TargetADBC(config={"uri": "sqlserver://localhost/db"})
-        _ = target.connection
-
-    mock_find_spec.assert_not_called()
-    mock_connect.assert_called_once_with(
-        driver="sqlserver",
-        uri="sqlserver://localhost/db",
-        db_kwargs={},
-    )
+    mock_connect.assert_called_once_with(driver=uri.partition(":")[0], uri=uri, db_kwargs={})
 
 
 def test_config_schema() -> None:

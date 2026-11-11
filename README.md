@@ -19,47 +19,36 @@ A Singer target for loading data into ADBC-compatible databases.
 git clone https://github.com/yourusername/target-adbc.git
 cd target-adbc
 
-# Install target-adbc with the drivers you need
-uv tool install --editable "./target-adbc[duckdb,sqlite,postgres]"
+# Install target-adbc
+uv tool install --editable ./target-adbc
 
 # For development
-uv sync --all-extras
+uv sync
 ```
 
 ## Supported Databases
 
 Any database with an ADBC driver is supported. Popular options include:
 
-| Database | Scheme in `uri` | Install with a PyPI extra | Install with `dbc` |
-|----------|------------------|----------------------------|---------------------|
-| **DuckDB** | `duckdb://` | `pip install target-adbc[duckdb]` | `dbc install duckdb` |
-| **SQLite** | `sqlite://` | `pip install target-adbc[sqlite]` | `dbc install sqlite` |
-| **PostgreSQL** | `postgresql://` | `pip install target-adbc[postgres]` | `dbc install postgresql` |
-| **MSSQL** | `sqlserver://` | *(no PyPI driver)* | `dbc install mssql` |
+| Database | Scheme in `uri` | Install with `dbc` |
+|----------|------------------|---------------------|
+| **DuckDB** | `duckdb://` | `dbc install duckdb` |
+| **SQLite** | `sqlite://` | `dbc install sqlite` |
+| **PostgreSQL** | `postgresql://` | `dbc install postgresql` |
+| **MSSQL** | `sqlserver://` | `dbc install mssql` |
 
 ### Installing ADBC Drivers
 
-There are two ways to make an ADBC driver available to target-adbc:
+Drivers are installed separately from target-adbc with [`dbc`](https://docs.columnar.tech/dbc/), and are found by the ADBC driver manager by name:
 
-1. **PyPI extras** (recommended for DuckDB, SQLite, and PostgreSQL). Installing the matching optional dependency pulls in a wheel that bundles the compiled driver — target-adbc detects and uses it automatically, so there's no separate driver-install step, and the driver version is pinned right alongside your other dependencies:
+```bash
+# Install dbc (one-time setup)
+curl -LsSf https://dbc.columnar.tech/install.sh | sh
 
-   ```bash
-   uv sync --extra duckdb --extra sqlite --extra postgres
-   # or: pip install "target-adbc[duckdb,sqlite,postgres]"
-   ```
-
-2. **[`dbc`](https://docs.columnar.tech/dbc/)**: required for drivers with no official PyPI package (e.g. MSSQL), and also works for DuckDB/SQLite/PostgreSQL if you'd rather manage drivers outside of your Python environment:
-
-   ```bash
-   # Install dbc (one-time setup)
-   curl -LsSf https://dbc.columnar.tech/install.sh | sh
-
-   # Install the drivers you need
-   dbc install duckdb
-   dbc install mssql
-   ```
-
-   If a PyPI extra is installed for a given database, target-adbc prefers it over a `dbc`-installed driver for that same database.
+# Install the drivers you need
+dbc install duckdb
+dbc install mssql
+```
 
 See the [ADBC documentation](https://arrow.apache.org/adbc/current/driver/installation.html) for a full list of available drivers.
 
@@ -151,11 +140,7 @@ When `add_record_metadata` is enabled (default), the following columns are added
 
 ### Install ADBC Drivers First
 
-Before using target-adbc with Meltano, install the required ADBC driver(s) — see [Installing ADBC Drivers](#installing-adbc-drivers) above. For DuckDB/SQLite/PostgreSQL, the simplest way is a PyPI extra:
-
-```bash
-pip_url: target-adbc[duckdb]
-```
+Before using target-adbc with Meltano, install the required ADBC driver(s) — see [Installing ADBC Drivers](#installing-adbc-drivers) above. Drivers must be installed in the environment where Meltano runs the target, for example with `dbc install duckdb`.
 
 ### Add to meltano.yml
 
@@ -204,7 +189,7 @@ plugins:
 
   # Configured variant for DuckDB
   - name: target-adbc-duckdb
-    pip_url: target-adbc[duckdb]
+    pip_url: target-adbc
     inherit_from: target-adbc
     config:
       uri: duckdb://${MELTANO_PROJECT_ROOT}/output/warehouse.duckdb
@@ -212,7 +197,7 @@ plugins:
 
   # Configured variant for SQLite
   - name: target-adbc-sqlite
-    pip_url: target-adbc[sqlite]
+    pip_url: target-adbc
     inherit_from: target-adbc
     config:
       uri: sqlite://${MELTANO_PROJECT_ROOT}/output/warehouse.sqlite
@@ -276,13 +261,12 @@ tap-github --config tap_config.json | target-adbc --config pg_config.json
 git clone https://github.com/yourusername/target-adbc
 cd target-adbc
 
-# Install in development mode, including the DuckDB/SQLite/PostgreSQL
-# PyPI driver extras used by the test suite
-uv sync --all-extras
+# Install in development mode
+uv sync
 
-# MSSQL has no PyPI driver, so it needs dbc for the mssql-related tests
+# Install the drivers used by the test suite
 curl -LsSf https://dbc.columnar.tech/install.sh | sh
-dbc install mssql
+dbc sync
 ```
 
 ### Testing
@@ -347,7 +331,7 @@ This target implements the Singer specification:
 
 If you encounter connection errors:
 
-1. Ensure the driver is installed, either as a PyPI extra (`pip install target-adbc[duckdb]`) or with `dbc install <driver-name>`
+1. Ensure the driver is installed with `dbc install <driver-name>`
 2. Check your connection parameters match the driver's requirements
 3. Test the connection separately using the ADBC Python API
 

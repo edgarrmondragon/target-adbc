@@ -68,21 +68,21 @@ plugins:
       description: Default length for VARCHAR columns when not specified
 
   - name: target-adbc-duckdb
-    pip_url: -e .[duckdb]
+    pip_url: -e .
     inherit_from: target-adbc
     config:
       uri: duckdb://${MELTANO_PROJECT_ROOT}/output/warehouse.duckdb
       overwrite_behavior: replace
 
   - name: target-adbc-sqlite
-    pip_url: -e .[sqlite]
+    pip_url: -e .
     inherit_from: target-adbc
     config:
       uri: sqlite://${MELTANO_PROJECT_ROOT}/output/warehouse.sqlite
       overwrite_behavior: replace
 
   - name: target-adbc-duckdb-profile
-    pip_url: -e .[duckdb]
+    pip_url: -e .
     inherit_from: target-adbc
     config:
       uri: profile://${MELTANO_PROJECT_ROOT}/profiles/duckdb.toml
