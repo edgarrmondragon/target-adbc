@@ -87,3 +87,10 @@ plugins:
     config:
       uri: profile://${MELTANO_PROJECT_ROOT}/profiles/duckdb.toml
       overwrite_behavior: replace
+
+  - name: target-adbc-sqlite-profile
+    pip_url: -e .
+    inherit_from: target-adbc
+    config:
+      uri: profile://${MELTANO_PROJECT_ROOT}/profiles/sqlite.toml
+      overwrite_behavior: replace

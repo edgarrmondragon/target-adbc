@@ -55,11 +55,17 @@ def test_target_initialization(duckdb_config: Config) -> None:
     assert target.config["uri"].endswith("test.duckdb")
 
 
-@pytest.mark.parametrize("driver", ["duckdb", "sqlite"])
-def test_parallelism_disabled(driver: str) -> None:
+@pytest.mark.parametrize("max_parallelism", [None, 8])
+def test_config_parallelism(max_parallelism: int | None) -> None:
     """Test that parallel processing is disabled by default."""
-    target = TargetADBC(config={"uri": f"{driver}://"})
-    assert target.max_parallelism == 1
+    config = {}
+    expected = 1  # default
+    if max_parallelism is not None:
+        config["max_parallelism"] = max_parallelism
+        expected = max_parallelism
+
+    target = TargetADBC(config={"uri": "generic://", **config})
+    assert target.max_parallelism == expected
 
 
 def test_use_profile(

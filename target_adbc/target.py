@@ -111,6 +111,12 @@ class TargetADBC(Target):
             ),
         ),
         th.Property(
+            "max_parallelism",
+            th.IntegerType,
+            default=1,
+            description="TODO",
+        ),
+        th.Property(
             "varchar_length",
             th.IntegerType,
             default=255,
@@ -141,6 +147,7 @@ class TargetADBC(Target):
 
         self._connection: dbapi.Connection | None = None
         self._uri: str = self.config["uri"]
+        self._max_parallelism = self._config["max_parallelism"]
 
     @override
     def create_sink(
@@ -165,25 +172,6 @@ class TargetADBC(Target):
             self._connection = connect.get_connection(self.config)
             self.logger.info("Connecting to: %s", self._connection.adbc_get_info()["vendor_name"])
         return self._connection
-
-    @property
-    @override
-    def max_parallelism(self) -> int:
-        if self._max_parallelism_override is not None:
-            return self._max_parallelism_override
-
-        vendor_name = self.connection.adbc_get_info()["vendor_name"]
-        if vendor_name in _SINGLE_WRITER_VENDORS:
-            self.logger.info("Setting max_parallelism to 1 to avoid database locks.")
-            self._max_parallelism_override = 1
-            return 1
-
-        return super().max_parallelism
-
-    @max_parallelism.setter
-    @override
-    def max_parallelism(self, new_value: int) -> None:
-        self._max_parallelism_override = new_value
 
     def _close_connection(self) -> None:
         if self._connection is not None:
