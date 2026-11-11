@@ -171,7 +171,7 @@ def test_connection_uses_driver_manager(uri: str) -> None:
         target = TargetADBC(config={"uri": uri})
         _ = target.connection
 
-    mock_connect.assert_called_once_with(driver=uri.partition(":")[0], uri=uri, db_kwargs={})
+    mock_connect.assert_called_once_with(uri=uri, db_kwargs={})
 
 
 def test_config_schema() -> None:

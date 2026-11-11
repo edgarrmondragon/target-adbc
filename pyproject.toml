@@ -19,7 +19,6 @@ dependencies = [
   "adbc-driver-manager~=1.12",
   "pyarrow>=25.0",
   "singer-sdk~=0.55.0a9",
-  "tomli-w>=1.2.0",
 ]
 [project.scripts]
 target-adbc = "target_adbc.target:TargetADBC.cli"
