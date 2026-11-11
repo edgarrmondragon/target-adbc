@@ -15,10 +15,17 @@ if TYPE_CHECKING:
     from singer_sdk.singerlib.types import KeyProperties
 
 
+# `vendor_name` values reported by drivers whose databases lock on concurrent writes
+_SINGLE_WRITER_VENDORS = {"duckdb", "SQLite"}
+
+
 class TargetADBC(Target):
     """Singer target for ADBC-compatible databases."""
 
     name = "target-adbc"
+
+    # The SDK presets `_max_parallelism` to its default, so track explicit/derived values apart.
+    _max_parallelism_override: int | None = None
 
     config_jsonschema = th.PropertiesList(
         th.Property(
@@ -26,7 +33,12 @@ class TargetADBC(Target):
             th.StringType,
             required=True,
             secret=True,
-            description="ADBC URI. Examples: 'duckdb://...', 'postgresql://...'",
+            description=(
+                "ADBC URI. Examples: 'profile://', 'duckdb://...', "
+                "'postgresql://...'. Using a `profile` URI will cause "
+                "driver-specific settings from the target to be ignored, which "
+                "will instead be read from the profile TOML file."
+            ),
             examples=[
                 "duckdb://",
                 "postgresql://",
@@ -130,10 +142,6 @@ class TargetADBC(Target):
         self._connection: dbapi.Connection | None = None
         self._uri: str = self.config["uri"]
 
-        if self._uri.startswith(("duckdb", "sqlite")):
-            self.logger.info("Setting max_parallelism to 1 to avoid database locks.")
-            self._max_parallelism = 1
-
     @override
     def create_sink(
         self,
@@ -153,10 +161,29 @@ class TargetADBC(Target):
     @property
     def connection(self) -> dbapi.Connection:
         """Get or create the shared ADBC connection."""
-        self.logger.info("Connecting to database using URI: %s", self._uri)
         if self._connection is None:
+            self.logger.info("Connecting to database using URI: %s", self._uri)
             self._connection = connect.get_connection(self.config)
         return self._connection
+
+    @property
+    @override
+    def max_parallelism(self) -> int:
+        if self._max_parallelism_override is not None:
+            return self._max_parallelism_override
+
+        vendor_name = self.connection.adbc_get_info().get("vendor_name")
+        if vendor_name in _SINGLE_WRITER_VENDORS:
+            self.logger.info("Setting max_parallelism to 1 to avoid database locks.")
+            self._max_parallelism_override = 1
+            return 1
+
+        return super().max_parallelism
+
+    @max_parallelism.setter
+    @override
+    def max_parallelism(self, new_value: int) -> None:
+        self._max_parallelism_override = new_value
 
     def _close_connection(self) -> None:
         if self._connection is not None:

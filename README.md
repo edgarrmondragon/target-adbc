@@ -106,6 +106,18 @@ Create a `config.json` file with your database connection details:
 }
 ```
 
+#### Connection Profile Example
+
+A URI of the form `profile://<profile_name>` where `profile_name` is either an absolute path to a profile TOML file, or a name the driver manager searches as `<profile_name>.toml` in the [standard profile search locations][profile-locations].
+
+```json
+{
+  "uri": "profile://my_profile",
+  "batch_size_rows": 10000,
+  "overwrite_behavior": "append"
+}
+```
+
 ### Configuration Options
 
 | Setting | Required | Default | Description |
@@ -381,3 +393,5 @@ This project is licensed under the Apache License 2.0 - see the LICENSE file for
 Built with:
 - [Singer SDK](https://github.com/meltano/sdk) by Meltano
 - [Apache Arrow ADBC](https://arrow.apache.org/adbc/) by the Apache Arrow community
+
+[profile-locations]: https://arrow.apache.org/adbc/current/format/connection_profiles.html#profile-search-locations

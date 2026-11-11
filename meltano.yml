@@ -80,3 +80,10 @@ plugins:
     config:
       uri: sqlite://${MELTANO_PROJECT_ROOT}/output/warehouse.sqlite
       overwrite_behavior: replace
+
+  - name: target-adbc-duckdb-profile
+    pip_url: -e .[duckdb]
+    inherit_from: target-adbc
+    config:
+      uri: profile://${MELTANO_PROJECT_ROOT}/profiles/duckdb.toml
+      overwrite_behavior: replace

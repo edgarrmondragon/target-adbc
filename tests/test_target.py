@@ -56,10 +56,39 @@ def test_target_initialization(duckdb_config: Config) -> None:
     assert target.config["uri"].endswith("test.duckdb")
 
 
-def test_parallelism_disabled() -> None:
+@pytest.mark.parametrize("driver", ["duckdb", "sqlite"])
+def test_parallelism_disabled(driver: str) -> None:
     """Test that parallel processing is disabled by default."""
-    target = TargetADBC(config={"uri": "duckdb://"})
+    target = TargetADBC(config={"uri": f"{driver}://"})
     assert target.max_parallelism == 1
+
+
+def test_use_profile(
+    request: pytest.FixtureRequest,
+    monkeypatch: pytest.MonkeyPatch,
+    singer_messages: list[str],
+    tmp_path: Path,
+) -> None:
+    """Test that a connection profile URI is correctly used."""
+    input_file = tmp_path / "input.jsonl"
+    input_file.write_text("\n".join(singer_messages))
+
+    profile = request.config.rootpath.joinpath("profiles/duckdb.toml")
+    config = {"uri": f"profile://{profile.as_posix()}"}
+    target = TargetADBC(config=config)
+
+    with monkeypatch.context() as m, input_file.open() as f:
+        m.setenv("MELTANO_PROJECT_ROOT", value=tmp_path.as_posix())
+        target.listen(f)
+        db_path = target.connection.adbc_database.get_option("path")
+        assert not db_path.startswith("/local.duckdb") and db_path.endswith("/local.duckdb")
+
+    with monkeypatch.context() as m:
+        m.setenv("MELTANO_PROJECT_ROOT", value=tmp_path.as_posix())
+        with connect.get_connection(config) as conn, conn.cursor() as cur:
+            res = cur.execute("SELECT COUNT(*) FROM users").fetchone()
+            assert res
+            assert res[0] == 2
 
 
 def test_append_mode(

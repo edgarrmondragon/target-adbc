@@ -19,6 +19,9 @@ def get_connection(config: Mapping[str, Any]) -> adbc_driver_manager.dbapi.Conne
     driver = parsed.scheme
     db_kwargs: dict[str, Any] = config.get(parsed.scheme, {})
 
+    if driver == "profile":
+        return adbc_driver_manager.dbapi.connect(uri=uri)
+
     if (
         driver == "duckdb"
         and importlib.util.find_spec("adbc_driver_duckdb")
