@@ -162,8 +162,8 @@ class TargetADBC(Target):
     def connection(self) -> dbapi.Connection:
         """Get or create the shared ADBC connection."""
         if self._connection is None:
-            self.logger.info("Connecting to database using URI: %s", self._uri)
             self._connection = connect.get_connection(self.config)
+            self.logger.info("Connecting to: %s", self._connection.adbc_get_info()["vendor_name"])
         return self._connection
 
     @property
@@ -172,7 +172,7 @@ class TargetADBC(Target):
         if self._max_parallelism_override is not None:
             return self._max_parallelism_override
 
-        vendor_name = self.connection.adbc_get_info().get("vendor_name")
+        vendor_name = self.connection.adbc_get_info()["vendor_name"]
         if vendor_name in _SINGLE_WRITER_VENDORS:
             self.logger.info("Setting max_parallelism to 1 to avoid database locks.")
             self._max_parallelism_override = 1
