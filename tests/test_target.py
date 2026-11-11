@@ -169,7 +169,7 @@ def test_connection_uses_driver_manager(uri: str) -> None:
     """Drivers are resolved by name through the driver manager."""
 
     class _MockConnection:
-        def adbc_get_info(self):  # ruff: ignore[missing-return-type-private-function, no-self-use]
+        def adbc_get_info(self) -> dict[str, str]:  # ruff: ignore[no-self-use]
             return {"vendor_name": "Mock"}
 
         def close(self) -> None: ...
