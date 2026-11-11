@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os.path
+import re
 import sys
 import tomllib
 from typing import TYPE_CHECKING, Any
@@ -8,6 +9,8 @@ from urllib.parse import urlparse
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+
+_DRIVE_RE = re.compile(r"[A-Za-z]:")
 
 
 def _read_toml(path: str) -> dict[str, Any]:
@@ -17,8 +20,11 @@ def _read_toml(path: str) -> dict[str, Any]:
 
 def profile_from_uri(uri: str, env: Mapping[str, str]) -> dict[str, Any]:
     parsed = urlparse(uri)
-    if os.path.isabs(parsed.path):
-        return _read_toml(parsed.path)
+
+    # `profile://C:/path/to/profile.toml` parses with the drive letter as the netloc
+    path = f"{parsed.netloc}{parsed.path}" if _DRIVE_RE.fullmatch(parsed.netloc) else parsed.path
+    if os.path.isabs(path):
+        return _read_toml(path)
 
     # Use search locations
     profile_name = parsed.netloc

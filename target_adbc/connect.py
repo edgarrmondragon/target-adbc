@@ -72,11 +72,13 @@ def _open_connection(config: Mapping[str, Any]) -> adbc_driver_manager.dbapi.Con
         if found := _find_pypi_driver(profile["driver"]):
             profile["driver"], entrypoint = found
 
-        with tempfile.NamedTemporaryFile(suffix=".toml", mode="wb") as tmp:
-            tomli_w.dump(profile, tmp)
-            tmp.seek(0)
+        # A named temp file can't be reopened by the driver on Windows, so use a directory.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            profile_path = Path(tmp_dir, "profile.toml")
+            with profile_path.open("wb") as f:
+                tomli_w.dump(profile, f)
             return adbc_driver_manager.dbapi.connect(
-                uri=f"profile://{tmp.name}",
+                uri=f"profile://{profile_path.as_posix()}",
                 entrypoint=entrypoint,
             )
 
