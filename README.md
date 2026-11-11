@@ -331,7 +331,7 @@ This target implements the Singer specification:
 
 If you encounter connection errors:
 
-1. Ensure the driver is installed with `dbc install <driver-name>`
+1. Ensure the driver is installed (`dbc install <driver-name>`)
 2. Check your connection parameters match the driver's requirements
 3. Test the connection separately using the ADBC Python API
 

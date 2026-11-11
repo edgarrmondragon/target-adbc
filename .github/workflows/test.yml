@@ -47,7 +47,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install all ADBC drivers with dbc
-        run: uvx dbc sync
+        run: |
+          uvx dbc sync
+          uvx dbc list
 
       - name: Run tests
         env:
