@@ -167,7 +167,14 @@ def test_replace_mode(
 )
 def test_connection_uses_driver_manager(uri: str) -> None:
     """Drivers are resolved by name through the driver manager."""
-    with mock.patch.object(dbapi, "connect", return_value=mock.Mock()) as mock_connect:
+
+    class _MockConnection:
+        def adbc_get_info(self):  # ruff: ignore[missing-return-type-private-function, no-self-use]
+            return {"vendor_name": "Mock"}
+
+        def close(self) -> None: ...
+
+    with mock.patch.object(dbapi, "connect", return_value=_MockConnection()) as mock_connect:
         target = TargetADBC(config={"uri": uri})
         _ = target.connection
 
